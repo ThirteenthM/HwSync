@@ -1,9 +1,9 @@
 <Solution>
-  <Folder Name="/src/">
-    <Project Path="src/HwSync.Abstractions/HwSync.Abstractions.csproj" />
-    <Project Path="src/HwSync.Core/HwSync.Core.csproj" />
-  </Folder>
-  <Folder Name="/tests/">
-    <Project Path="tests/HwSync.Core.Tests/HwSync.Core.Tests.csproj" />
-  </Folder>
+    <Folder Name="/src/">
+        <Project Path="src/HwSync.Abstractions/HwSync.Abstractions.csproj" />
+        <Project Path="src/HwSync.Core/HwSync.Core.csproj" />
+    </Folder>
+    <Folder Name="/tests/">
+        <Project Path="tests/HwSync.Core.Tests/HwSync.Core.Tests.csproj" />
+    </Folder>
 </Solution>
