@@ -1,8 +1,6 @@
-using System;
-using System.Collections.Generic;
-using System.Text;
+using HwSync.Core.Models;
 
-namespace HwSync.Core.Models
+namespace HwSync.Core.Services
 {
     public sealed class ChangeComparer
     {
@@ -14,7 +12,7 @@ namespace HwSync.Core.Models
             Dictionary<string, FileSnapshot> previousByPath = previous.ToDictionary(x => x.RelativePath);
             Dictionary<string, FileSnapshot> currentByPath = current.ToDictionary(x => x.RelativePath);
 
-            List<FileChange> changes = new();
+            List<FileChange> changes = [];
 
             foreach (FileSnapshot currentFile in currentByPath.Values)
             {
