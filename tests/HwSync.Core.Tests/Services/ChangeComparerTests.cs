@@ -3,7 +3,7 @@ using HwSync.Core.Services;
 
 namespace HwSync.Core.Tests.Services
 {
-    public class ChangeComparerTests
+    public partial class ChangeComparerTests
     {
         [Test]
         public void Compare_WhenFileIsNew_ReturnsCreatedChange()
@@ -11,15 +11,7 @@ namespace HwSync.Core.Tests.Services
             ChangeComparer comparer = new();
 
             FileSnapshot[] previous = [];
-
-            FileSnapshot[] current =
-            [
-                new(
-                    "Photos/2026/Test.jpg",
-                    1000,
-                    new DateTime(2026, 8, 9, 12, 0, 0, DateTimeKind.Utc)
-                ),
-            ];
+            FileSnapshot[] current = [CreateSnapshot()];
 
             IReadOnlyCollection<FileChange> changes = comparer.Compare(previous, current);
 
@@ -40,15 +32,7 @@ namespace HwSync.Core.Tests.Services
         {
             ChangeComparer comparer = new();
 
-            FileSnapshot[] previous =
-            [
-                new(
-                    "Photos/2026/Test.jpg",
-                    1000,
-                    new DateTime(2026, 8, 9, 12, 0, 0, DateTimeKind.Utc)
-                ),
-            ];
-
+            FileSnapshot[] previous = [CreateSnapshot()];
             FileSnapshot[] current = [];
 
             IReadOnlyCollection<FileChange> changes = comparer.Compare(previous, current);
@@ -70,23 +54,8 @@ namespace HwSync.Core.Tests.Services
         {
             ChangeComparer comparer = new();
 
-            FileSnapshot[] previous =
-            [
-                new(
-                    "Photos/2026/Test.jpg",
-                    1000,
-                    new DateTime(2026, 8, 9, 12, 0, 0, DateTimeKind.Utc)
-                ),
-            ];
-
-            FileSnapshot[] current =
-            [
-                new(
-                    "Photos/2026/Test.jpg",
-                    1250,
-                    new DateTime(2026, 8, 9, 12, 5, 0, DateTimeKind.Utc)
-                ),
-            ];
+            FileSnapshot[] previous = [CreateSnapshot()];
+            FileSnapshot[] current = [CreateSnapshot(size: 1250, lastWriteTimeUtc: CreateLastWriteTimeUtc().AddMinutes(5))];
 
             IReadOnlyCollection<FileChange> changes = comparer.Compare(previous, current);
 
@@ -100,6 +69,53 @@ namespace HwSync.Core.Tests.Services
                 Assert.That(change.Previous, Is.EqualTo(previous[0]));
                 Assert.That(change.Current, Is.EqualTo(current[0]));
             });
+        }
+
+        [Test]
+        public void Compare_WhenFileIsUnchanged_ReturnsNoChanges()
+        {
+            FileSnapshot file = CreateSnapshot();
+
+            FileSnapshot[] previous = [file];
+            FileSnapshot[] current = [file];
+
+            ChangeComparer comparer = new();
+
+            IReadOnlyCollection<FileChange> changes =
+                comparer.Compare(previous, current);
+
+            Assert.That(changes, Is.Empty);
+        }
+
+        [Test]
+        public void Compare_WhenFileSizeChanged_ReturnsModifiedChange()
+        {
+            FileSnapshot[] previous = [CreateSnapshot()];
+            FileSnapshot[] current = [CreateSnapshot(size: 1250)];
+
+            ChangeComparer comparer = new();
+
+            IReadOnlyCollection<FileChange> changes =
+                comparer.Compare(previous, current);
+
+            Assert.That(changes, Has.Count.EqualTo(1));
+            Assert.That(changes.Single().ChangeType,
+                Is.EqualTo(FileChangeType.Modified));
+        }
+
+        [Test]
+        public void Compare_WhenLastWriteTimeChanged_ReturnsModifiedChange()
+        {
+            FileSnapshot[] previous = [CreateSnapshot()];
+            FileSnapshot[] current = [CreateSnapshot(lastWriteTimeUtc: CreateLastWriteTimeUtc().AddMinutes(5))];
+
+            ChangeComparer comparer = new();
+
+            IReadOnlyCollection<FileChange> changes = comparer.Compare(previous, current);
+
+            Assert.That(changes, Has.Count.EqualTo(1));
+            Assert.That(changes.Single().ChangeType,
+                Is.EqualTo(FileChangeType.Modified));
         }
     }
 }
