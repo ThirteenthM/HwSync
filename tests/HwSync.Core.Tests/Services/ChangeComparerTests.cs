@@ -117,14 +117,5 @@ namespace HwSync.Core.Tests.Services
             Assert.That(changes.Single().ChangeType,
                 Is.EqualTo(FileChangeType.Modified));
         }
-
-        [Test]
-        public void Compare_W1()
-        {
-            string? s = null;
-            string? s2 = s ?? string.Empty;
-
-            Assert.That(s2, Is.Not.Null, "Строка не должна быть null");
-        }
     }
 }
