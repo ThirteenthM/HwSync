@@ -1,5 +1,7 @@
+using System.Threading.Channels;
 using HwSync.Core.Models;
 using HwSync.Core.Services;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace HwSync.Core.Tests.Services
 {
@@ -74,10 +76,8 @@ namespace HwSync.Core.Tests.Services
         [Test]
         public void Compare_WhenFileIsUnchanged_ReturnsNoChanges()
         {
-            FileSnapshot file = CreateSnapshot();
-
-            FileSnapshot[] previous = [file];
-            FileSnapshot[] current = [file];
+            FileSnapshot[] previous = [CreateSnapshot()];
+            FileSnapshot[] current = [CreateSnapshot()];
 
             ChangeComparer comparer = new();
 
@@ -116,6 +116,15 @@ namespace HwSync.Core.Tests.Services
             Assert.That(changes, Has.Count.EqualTo(1));
             Assert.That(changes.Single().ChangeType,
                 Is.EqualTo(FileChangeType.Modified));
+        }
+
+        [Test]
+        public void Compare_W1()
+        {
+            string? s = null;
+            string? s2 = s ?? string.Empty;
+
+            Assert.That(s2, Is.Not.Null, "Строка не должна быть null");
         }
     }
 }
