@@ -10,64 +10,149 @@ public class DirectorySnapshotProviderTests
     [Test]
     public void GetSnapshot_WhenDirectoryContainsFile_ReturnsFileSnapshot()
     {
-        using TemporaryDirectory temporaryDirectory = new();
+        string rootPath = Path.Combine(
+            Path.GetTempPath(),
+            Guid.NewGuid().ToString());
 
-        string filePath = Path.Combine(temporaryDirectory.Path, "Test.txt");
-        File.WriteAllText(filePath, "Hello HwSync!");
+        Directory.CreateDirectory(rootPath);
 
-        FileInfo fileInfo = new(filePath);
-
-        DirectorySnapshotProvider provider = new();
-
-        IReadOnlyCollection<FileSnapshot> snapshots =
-            provider.GetSnapshot(temporaryDirectory.Path);
-
-        Assert.That(snapshots, Has.Count.EqualTo(1));
-
-        FileSnapshot snapshot = snapshots.Single();
-
-        Assert.Multiple(() =>
+        try
         {
-            Assert.That(snapshot.RelativePath, Is.EqualTo("Test.txt"));
-            Assert.That(snapshot.Size, Is.EqualTo(fileInfo.Length));
-            Assert.That(
-                snapshot.LastWriteTimeUtc,
-                Is.EqualTo(fileInfo.LastWriteTimeUtc));
-        });
+            string filePath = Path.Combine(rootPath, "Test.txt");
+            File.WriteAllText(filePath, "Hello HwSync!");
+
+            FileInfo fileInfo = new(filePath);
+
+            DirectorySnapshotProvider provider = new();
+
+            IReadOnlyCollection<FileSnapshot> snapshots =
+                provider.GetSnapshot(rootPath);
+
+            Assert.That(snapshots, Has.Count.EqualTo(1));
+
+            FileSnapshot snapshot = snapshots.Single();
+
+            Assert.Multiple(() =>
+            {
+                Assert.That(snapshot.RelativePath, Is.EqualTo("Test.txt"));
+                Assert.That(snapshot.Size, Is.EqualTo(fileInfo.Length));
+                Assert.That(
+                    snapshot.LastWriteTimeUtc,
+                    Is.EqualTo(fileInfo.LastWriteTimeUtc));
+            });
+        }
+        finally
+        {
+            Directory.Delete(rootPath, recursive: true);
+        }
     }
 
     [Test]
     public void GetSnapshot_WhenFileIsNested_ReturnsRelativePath()
     {
-        using TemporaryDirectory temporaryDirectory = new();
+        string rootPath = Path.Combine(
+            Path.GetTempPath(),
+            Guid.NewGuid().ToString());
 
         string directoryPath = Path.Combine(
-            temporaryDirectory.Path,
+            rootPath,
             "Photos",
             "2026");
 
         Directory.CreateDirectory(directoryPath);
 
-        string filePath = Path.Combine(
-            directoryPath,
-            "Test.jpg");
+        try
+        {
+            string filePath = Path.Combine(
+                directoryPath,
+                "Test.jpg");
 
-        File.WriteAllText(filePath, "Hello HwSync!");
+            File.WriteAllText(filePath, "Hello HwSync!");
+
+            DirectorySnapshotProvider provider = new();
+
+            IReadOnlyCollection<FileSnapshot> snapshots =
+                provider.GetSnapshot(rootPath);
+
+            FileSnapshot snapshot = snapshots.Single();
+
+            string expectedRelativePath = Path.Combine(
+                "Photos",
+                "2026",
+                "Test.jpg");
+
+            Assert.That(
+                snapshot.RelativePath,
+                Is.EqualTo(expectedRelativePath));
+        }
+        finally
+        {
+            Directory.Delete(rootPath, recursive: true);
+        }
+    }
+
+    [Test]
+    public void GetSnapshot_WhenDirectoryIsEmpty_ReturnsEmptyCollection()
+    {
+        using TemporaryDirectory temporaryDirectory = new();
 
         DirectorySnapshotProvider provider = new();
 
         IReadOnlyCollection<FileSnapshot> snapshots =
             provider.GetSnapshot(temporaryDirectory.Path);
 
-        FileSnapshot snapshot = snapshots.Single();
+        Assert.That(snapshots, Is.Empty);
+    }
 
-        string expectedRelativePath = Path.Combine(
-            "Photos",
-            "2026",
-            "Test.jpg");
+    [Test]
+    public void GetSnapshot_WhenDirectoryContainsMultipleFiles_ReturnsAllFiles()
+    {
+        using TemporaryDirectory temporaryDirectory = new();
 
-        Assert.That(
-            snapshot.RelativePath,
-            Is.EqualTo(expectedRelativePath));
+        string photosPath = Path.Combine(
+            temporaryDirectory.Path,
+            "Photos");
+
+        string yearPath = Path.Combine(
+            photosPath,
+            "2026");
+
+        Directory.CreateDirectory(yearPath);
+
+        File.WriteAllText(
+            Path.Combine(temporaryDirectory.Path, "Root.txt"),
+            "Root");
+
+        File.WriteAllText(
+            Path.Combine(photosPath, "Photo.txt"),
+            "Photo");
+
+        File.WriteAllText(
+            Path.Combine(yearPath, "Summer.jpg"),
+            "Summer");
+
+        DirectorySnapshotProvider provider = new();
+
+        IReadOnlyCollection<FileSnapshot> snapshots =
+            provider.GetSnapshot(temporaryDirectory.Path);
+
+        string[] relativePaths = snapshots
+            .Select(snapshot => snapshot.RelativePath)
+            .ToArray();
+
+        Assert.Multiple(() =>
+        {
+            Assert.That(snapshots, Has.Count.EqualTo(3));
+
+            Assert.That(relativePaths, Does.Contain("Root.txt"));
+
+            Assert.That(
+                relativePaths,
+                Does.Contain(Path.Combine("Photos", "Photo.txt")));
+
+            Assert.That(
+                relativePaths,
+                Does.Contain(Path.Combine("Photos", "2026", "Summer.jpg")));
+        });
     }
 }
