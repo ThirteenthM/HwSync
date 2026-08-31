@@ -1,7 +1,6 @@
-using System.Threading.Channels;
+using HwSync.Abstractions.Models;
 using HwSync.Core.Models;
 using HwSync.Core.Services;
-using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace HwSync.Core.Tests.Services
 {
