@@ -3,8 +3,18 @@ using HwSync.Core.Models;
 
 namespace HwSync.Core.Services
 {
-    public sealed class ChangeComparer
+    /// <summary>
+    /// Компаратор файлов - получает список файлов (текущий, предыдущий, и признак расхождения)
+    /// исключены файлы с одинаковыми атрибутами сравления расхождения.
+    /// </summary>
+    public sealed class ChangeComparer : IChangeComparer
     {
+        /// <summary>
+        /// Компоратор.
+        /// </summary>
+        /// <param name="previous">Список предыдущих файлов.</param>
+        /// <param name="current">Список текущих файлов.</param>
+        /// <returns>Список файлов (текущий, предыдущий, и признак расхождения)</returns>
         public IReadOnlyCollection<FileChange> Compare(
             IReadOnlyCollection<FileSnapshot> previous,
             IReadOnlyCollection<FileSnapshot> current
@@ -17,33 +27,17 @@ namespace HwSync.Core.Services
 
             foreach (FileSnapshot currentFile in currentByPath.Values)
             {
-                if (
-                    !previousByPath.TryGetValue(
-                        currentFile.RelativePath,
-                        out FileSnapshot? previousFile
-                    )
-                )
+                if (!previousByPath.TryGetValue(currentFile.RelativePath, out FileSnapshot? previousFile))
                 {
-                    changes.Add(
-                        new(
-                            FileChangeType.Created,
-                            Previous: null,
-                            Current: currentFile
-                        )
-                    );
-
+                    // у текущего файла нет предыдущего - новый файл.
+                    changes.Add(new(FileChangeType.Created, Previous: null, Current: currentFile));
                     continue;
                 }
 
                 if (IsModified(previousFile, currentFile))
                 {
-                    changes.Add(
-                        new(
-                            FileChangeType.Modified,
-                            Previous: previousFile,
-                            Current: currentFile
-                        )
-                    );
+                    // у текущего файла есть предыдущий и они различаются.
+                    changes.Add(new(FileChangeType.Modified, Previous: previousFile, Current: currentFile));
                 }
             }
 
@@ -51,26 +45,30 @@ namespace HwSync.Core.Services
             {
                 if (!currentByPath.ContainsKey(previousFile.RelativePath))
                 {
-                    changes.Add(
-                        new(
-                            FileChangeType.Deleted,
-                            Previous: previousFile,
-                            Current: null
-                        )
-                    );
+                    // был файл предыдущий и щас его нет среди текущих - файл был удален.
+                    changes.Add(new(FileChangeType.Deleted, Previous: previousFile, Current: null));
                 }
             }
 
             return changes;
         }
 
+        /// <summary>
+        /// Метод сравнения двух файлов.
+        /// </summary>
+        /// <param name="previousFile">Атрибуты предыдущего файла.</param>
+        /// <param name="currentFile">Атрибуты нового файла.</param>
+        /// <returns></returns>
         private static bool IsModified(
-            FileSnapshot previous,
-            FileSnapshot current
+            FileSnapshot previousFile,
+            FileSnapshot currentFile
         )
         {
-            return previous.Size != current.Size
-                || previous.LastWriteTimeUtc != current.LastWriteTimeUtc;
+            // !!!! пока признак различия - это разный размер и разная дата последней модификации.
+            return
+                previousFile.Size != currentFile.Size
+                ||
+                previousFile.LastWriteTimeUtc != currentFile.LastWriteTimeUtc;
         }
     }
 }

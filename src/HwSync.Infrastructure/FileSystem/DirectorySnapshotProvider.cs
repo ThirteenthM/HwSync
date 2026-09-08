@@ -7,7 +7,7 @@ public sealed class DirectorySnapshotProvider : IFileSnapshotProvider
 {
     public IReadOnlyCollection<FileSnapshot> GetSnapshot(string rootPath)
     {
-        List<FileSnapshot> snapshots = new();
+        List<FileSnapshot> snapshots = [];
 
         foreach (string filePath in Directory.EnumerateFiles(
             rootPath,

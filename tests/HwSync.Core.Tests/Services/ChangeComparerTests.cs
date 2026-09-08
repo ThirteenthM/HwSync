@@ -9,7 +9,7 @@ namespace HwSync.Core.Tests.Services
         [Test]
         public void Compare_WhenFileIsNew_ReturnsCreatedChange()
         {
-            ChangeComparer comparer = new();
+            IChangeComparer comparer = new ChangeComparer();
 
             FileSnapshot[] previous = [];
             FileSnapshot[] current = [CreateSnapshot()];
@@ -31,7 +31,7 @@ namespace HwSync.Core.Tests.Services
         [Test]
         public void Compare_WhenFileIsDeleted_ReturnsDeletedChange()
         {
-            ChangeComparer comparer = new();
+            IChangeComparer comparer = new ChangeComparer();
 
             FileSnapshot[] previous = [CreateSnapshot()];
             FileSnapshot[] current = [];
@@ -53,7 +53,7 @@ namespace HwSync.Core.Tests.Services
         [Test]
         public void Compare_WhenFileIsModified_ReturnsModifiedChange()
         {
-            ChangeComparer comparer = new();
+            IChangeComparer comparer = new ChangeComparer();
 
             FileSnapshot[] previous = [CreateSnapshot()];
             FileSnapshot[] current = [CreateSnapshot(size: 1250, lastWriteTimeUtc: CreateLastWriteTimeUtc().AddMinutes(5))];
@@ -78,7 +78,7 @@ namespace HwSync.Core.Tests.Services
             FileSnapshot[] previous = [CreateSnapshot()];
             FileSnapshot[] current = [CreateSnapshot()];
 
-            ChangeComparer comparer = new();
+            IChangeComparer comparer = new ChangeComparer();
 
             IReadOnlyCollection<FileChange> changes =
                 comparer.Compare(previous, current);
@@ -92,7 +92,7 @@ namespace HwSync.Core.Tests.Services
             FileSnapshot[] previous = [CreateSnapshot()];
             FileSnapshot[] current = [CreateSnapshot(size: 1250)];
 
-            ChangeComparer comparer = new();
+            IChangeComparer comparer = new ChangeComparer();
 
             IReadOnlyCollection<FileChange> changes =
                 comparer.Compare(previous, current);
@@ -108,7 +108,7 @@ namespace HwSync.Core.Tests.Services
             FileSnapshot[] previous = [CreateSnapshot()];
             FileSnapshot[] current = [CreateSnapshot(lastWriteTimeUtc: CreateLastWriteTimeUtc().AddMinutes(5))];
 
-            ChangeComparer comparer = new();
+            IChangeComparer comparer = new ChangeComparer();
 
             IReadOnlyCollection<FileChange> changes = comparer.Compare(previous, current);
 

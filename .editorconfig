@@ -1,4 +1,4 @@
-﻿root = true
+root = true
 
 [*]
 charset = utf-8
@@ -57,6 +57,9 @@ dotnet_diagnostic.IDE0090.severity = warning
 
 # Do not suggest Primary Constructors for classes/structs (keep classic constructors)
 csharp_style_prefer_primary_constructors = false:silent
+
+# Keep interface-typed variables and dependencies; do not suggest concrete types.
+dotnet_diagnostic.CA1859.severity = none
 
 # --- Naming conventions ---
 # Private instance fields: _camelCase (DI dependencies, state).

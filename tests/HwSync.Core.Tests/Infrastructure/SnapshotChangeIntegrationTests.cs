@@ -32,7 +32,7 @@ public class SnapshotChangeIntegrationTests
         IReadOnlyCollection<FileSnapshot> current =
             provider.GetSnapshot(temporaryDirectory.Path);
 
-        ChangeComparer comparer = new();
+        IChangeComparer comparer = new ChangeComparer();
 
         IReadOnlyCollection<FileChange> changes =
             comparer.Compare(previous, current);
@@ -65,7 +65,7 @@ public class SnapshotChangeIntegrationTests
         IReadOnlyCollection<FileSnapshot> current =
             provider.GetSnapshot(temporaryDirectory.Path);
 
-        ChangeComparer comparer = new();
+        IChangeComparer comparer = new ChangeComparer();
 
         IReadOnlyCollection<FileChange> changes =
             comparer.Compare(previous, current);
@@ -111,7 +111,7 @@ public class SnapshotChangeIntegrationTests
         IReadOnlyCollection<FileSnapshot> current =
             provider.GetSnapshot(temporaryDirectory.Path);
 
-        ChangeComparer comparer = new();
+        IChangeComparer comparer = new ChangeComparer();
 
         IReadOnlyCollection<FileChange> changes =
             comparer.Compare(previous, current);

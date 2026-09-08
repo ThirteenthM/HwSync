@@ -136,9 +136,7 @@ public class DirectorySnapshotProviderTests
         IReadOnlyCollection<FileSnapshot> snapshots =
             provider.GetSnapshot(temporaryDirectory.Path);
 
-        string[] relativePaths = snapshots
-            .Select(snapshot => snapshot.RelativePath)
-            .ToArray();
+        string[] relativePaths = [.. snapshots.Select(snapshot => snapshot.RelativePath)];
 
         Assert.Multiple(() =>
         {
