@@ -1,7 +1,6 @@
 using HwSync.Abstractions.Models;
-using HwSync.Core.Models;
 
-namespace HwSync.Core.Services
+namespace HwSync.Abstractions.Services
 {
     public interface IChangeComparer
     {

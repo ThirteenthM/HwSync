@@ -1,6 +1,6 @@
+using HwSync.Abstractions.Services;
 using HwSync.Abstractions.FileSystem;
 using HwSync.Abstractions.Models;
-using HwSync.Core.Models;
 
 namespace HwSync.Core.Services
 {

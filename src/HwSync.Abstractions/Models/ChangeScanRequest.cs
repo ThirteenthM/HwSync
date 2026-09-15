@@ -1,6 +1,4 @@
-using HwSync.Abstractions.Models;
-
-namespace HwSync.Core.Models
+namespace HwSync.Abstractions.Models
 {
     public sealed record ChangeScanRequest(
         string RootPath,

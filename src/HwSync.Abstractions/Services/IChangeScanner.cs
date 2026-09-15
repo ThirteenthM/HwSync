@@ -1,6 +1,6 @@
-using HwSync.Core.Models;
+using HwSync.Abstractions.Models;
 
-namespace HwSync.Core.Services
+namespace HwSync.Abstractions.Services
 {
     public interface IChangeScanner
     {

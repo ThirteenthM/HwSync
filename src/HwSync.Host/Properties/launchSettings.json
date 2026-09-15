@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "HwSync.Host": {
+      "commandName": "Project",
+      "commandLineArgs": "--console"
+    }
+  }
+}

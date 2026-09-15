@@ -1,5 +1,5 @@
+using HwSync.Abstractions.Services;
 using HwSync.Abstractions.Models;
-using HwSync.Core.Models;
 using HwSync.Core.Services;
 using HwSync.Core.Tests.Helpers;
 using HwSync.Infrastructure.FileSystem;

@@ -1,4 +1,4 @@
-namespace HwSync.Core.Models
+namespace HwSync.Abstractions.Models
 {
     public enum FileChangeType
     {

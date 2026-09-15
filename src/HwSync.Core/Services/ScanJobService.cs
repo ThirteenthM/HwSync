@@ -1,0 +1,136 @@
+using System.Threading.Channels;
+using HwSync.Abstractions.Models;
+using HwSync.Abstractions.Services;
+
+namespace HwSync.Core.Services
+{
+    public sealed class ScanJobService : IScanJobService
+    {
+        private const int Capacity = 100;
+        private readonly object _gate = new();
+        private readonly Dictionary<Guid, ScanJob> _jobs = new();
+        private readonly Channel<(Guid Id, ChangeScanRequest Request)> _queue =
+            Channel.CreateBounded<(Guid, ChangeScanRequest)>(Capacity);
+        private bool _stopping;
+
+        public ScanJob Start(ChangeScanRequest request)
+        {
+            ArgumentNullException.ThrowIfNull(request);
+            if (string.IsNullOrWhiteSpace(request.RootPath) || !Path.IsPathFullyQualified(request.RootPath))
+            {
+                throw new ArgumentException("RootPath должен быть абсолютным путём.");
+            }
+            if (request.PreviousSnapshot is null || request.PreviousSnapshot.Any(file =>
+                file is null || string.IsNullOrWhiteSpace(file.RelativePath))
+                || request.PreviousSnapshot.Select(file => file.RelativePath).Distinct().Count() != request.PreviousSnapshot.Count)
+            {
+                throw new ArgumentException("PreviousSnapshot должен содержать файлы с непустыми уникальными путями.");
+            }
+            ChangeScanRequest snapshot = new(request.RootPath, request.PreviousSnapshot.ToArray());
+            lock (_gate)
+            {
+                if (_stopping) { throw new InvalidOperationException("Host останавливается."); }
+                if (_jobs.Count >= Capacity)
+                {
+                    ScanJob? oldest = _jobs.Values.Where(job => job.FinishedAt is not null)
+                        .OrderBy(job => job.FinishedAt).FirstOrDefault();
+                    if (oldest is null) { throw new InvalidOperationException("Очередь заданий заполнена."); }
+                    _jobs.Remove(oldest.Id);
+                }
+                ScanJob job = new(Guid.NewGuid(), ScanJobStatus.Queued, DateTimeOffset.UtcNow, null, null, null);
+                if (!_queue.Writer.TryWrite((job.Id, snapshot)))
+                {
+                    throw new InvalidOperationException("Очередь заданий заполнена.");
+                }
+                _jobs.Add(job.Id, job);
+                return job;
+            }
+        }
+
+        public ScanJob? Get(Guid id)
+        {
+            lock (_gate) { return _jobs.GetValueOrDefault(id); }
+        }
+
+        public ScanJob? Cancel(Guid id)
+        {
+            lock (_gate)
+            {
+                if (!_jobs.TryGetValue(id, out ScanJob? job)) { return null; }
+                if (job.Status == ScanJobStatus.Queued)
+                {
+                    job = job with { Status = ScanJobStatus.Cancelled, FinishedAt = DateTimeOffset.UtcNow };
+                }
+                else if (job.Status == ScanJobStatus.Running)
+                {
+                    job = job with { Status = ScanJobStatus.CancellationRequested };
+                }
+                _jobs[id] = job;
+                return job;
+            }
+        }
+
+        public async Task RunAsync(Func<ChangeScanRequest, IReadOnlyCollection<FileChange>> scan, CancellationToken stoppingToken)
+        {
+            using CancellationTokenRegistration registration = stoppingToken.Register(Stop);
+            try
+            {
+                await foreach ((Guid id, ChangeScanRequest request) in _queue.Reader.ReadAllAsync(stoppingToken))
+                {
+                    lock (_gate)
+                    {
+                        if (_stopping) { break; }
+                        if (!_jobs.TryGetValue(id, out ScanJob? job) || job.Status != ScanJobStatus.Queued) { continue; }
+                        _jobs[id] = job with { Status = ScanJobStatus.Running };
+                    }
+                    IReadOnlyCollection<FileChange>? changes = null;
+                    string? error = null;
+                    try
+                    {
+                        changes = scan(request);
+                    }
+                    catch (Exception exception)
+                    {
+                        error = exception is IOException or UnauthorizedAccessException
+                            ? "Не удалось прочитать каталог. Проверьте путь и права доступа."
+                            : "Не удалось выполнить сравнение снимков.";
+                    }
+                    lock (_gate)
+                    {
+                        ScanJob job = _jobs[id];
+                        bool cancelled = _stopping || job.Status == ScanJobStatus.CancellationRequested;
+                        _jobs[id] = job with
+                        {
+                            Status = cancelled ? ScanJobStatus.Cancelled : error is null ? ScanJobStatus.Completed : ScanJobStatus.Failed,
+                            FinishedAt = DateTimeOffset.UtcNow,
+                            Changes = cancelled ? null : changes,
+                            Error = cancelled ? null : error
+                        };
+                    }
+                }
+            }
+            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested) { }
+            finally { Stop(); }
+        }
+
+        private void Stop()
+        {
+            lock (_gate)
+            {
+                _stopping = true;
+                _queue.Writer.TryComplete();
+                foreach (ScanJob job in _jobs.Values.ToArray())
+                {
+                    if (job.Status == ScanJobStatus.Queued)
+                    {
+                        _jobs[job.Id] = job with { Status = ScanJobStatus.Cancelled, FinishedAt = DateTimeOffset.UtcNow };
+                    }
+                    else if (job.Status == ScanJobStatus.Running)
+                    {
+                        _jobs[job.Id] = job with { Status = ScanJobStatus.CancellationRequested };
+                    }
+                }
+            }
+        }
+    }
+}

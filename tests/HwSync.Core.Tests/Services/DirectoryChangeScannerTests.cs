@@ -1,5 +1,5 @@
+using HwSync.Abstractions.Services;
 using HwSync.Abstractions.Models;
-using HwSync.Core.Models;
 using HwSync.Core.Services;
 
 namespace HwSync.Core.Tests.Services
