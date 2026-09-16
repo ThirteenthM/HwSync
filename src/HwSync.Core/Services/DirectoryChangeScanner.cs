@@ -8,13 +8,15 @@ namespace HwSync.Core.Services
     {
         private readonly IFileSnapshotProvider _snapshotProvider;
         private readonly IChangeComparer _changeComparer;
+        private readonly IFolderHistory? _history;
 
         public DirectoryChangeScanner(
             IFileSnapshotProvider snapshotProvider,
-            IChangeComparer changeComparer)
+            IChangeComparer changeComparer, IFolderHistory? history = null)
         {
             _snapshotProvider = snapshotProvider;
             _changeComparer = changeComparer;
+            _history = history;
         }
 
         public IReadOnlyCollection<FileChange> Scan(ChangeScanRequest request)
@@ -22,7 +24,9 @@ namespace HwSync.Core.Services
             IReadOnlyCollection<FileSnapshot> currentSnapshot =
                 _snapshotProvider.GetSnapshot(request.RootPath);
 
-            return _changeComparer.Compare(request.PreviousSnapshot, currentSnapshot);
+            IReadOnlyCollection<FileChange> changes = _changeComparer.Compare(request.PreviousSnapshot, currentSnapshot);
+            _history?.RecordSnapshot(request.RootPath, currentSnapshot);
+            return changes;
         }
     }
 }

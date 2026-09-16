@@ -15,8 +15,14 @@ namespace HwSync.Api.Controllers
             _handler = handler;
         }
 
+        [HttpGet("{id:guid}/file")]
+        public IActionResult Download(Guid id, string relativePath, [FromServices] FileTransferHandler handler) => handler.Download(id, relativePath);
+
+        [HttpGet("{id:guid}/deleted-files")]
+        public ActionResult<IReadOnlyList<DeletedFileDto>> DeletedFiles(Guid id, [FromServices] FileTransferHandler handler) => handler.GetDeleted(id);
+
         [HttpPost]
-        public ActionResult<ScanJobResponse> Start(StartScanJobRequest request) => _handler.Start(request);
+        public ActionResult<ScanJobResponse> Start(CompareFoldersRequest request) => _handler.Start(request);
 
         [HttpGet("{id:guid}")]
         public ActionResult<ScanJobResponse> Get(Guid id) => _handler.Get(id);

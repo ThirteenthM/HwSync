@@ -37,7 +37,7 @@ namespace HwSync.Core.Services
                     if (oldest is null) { throw new InvalidOperationException("Очередь заданий заполнена."); }
                     _jobs.Remove(oldest.Id);
                 }
-                ScanJob job = new(Guid.NewGuid(), ScanJobStatus.Queued, DateTimeOffset.UtcNow, null, null, null);
+                ScanJob job = new(Guid.NewGuid(), ScanJobStatus.Queued, DateTimeOffset.UtcNow, null, null, null, Path.GetFullPath(request.RootPath));
                 if (!_queue.Writer.TryWrite((job.Id, snapshot)))
                 {
                     throw new InvalidOperationException("Очередь заданий заполнена.");

@@ -18,6 +18,7 @@ namespace HwSync.Host.Tests
             Directory.CreateDirectory(directory);
             await File.WriteAllTextAsync(Path.Combine(directory, "sample.txt"), "content");
             WebApplicationBuilder builder = HostBootstrap.CreateBuilder(true, ["Urls=http://127.0.0.1:0"]);
+            builder.Configuration["History:Directory"] = Path.Combine(TestContext.CurrentContext.WorkDirectory, "artifacts", "test-history", Guid.NewGuid().ToString("N"));
             builder.Logging.ClearProviders();
             await using WebApplication app = builder.Build();
             app.MapHwSyncApi();
@@ -31,7 +32,7 @@ namespace HwSync.Host.Tests
                 using HttpResponseMessage health = await client.GetAsync("/health", timeout.Token);
                 Assert.That(health.StatusCode, Is.EqualTo(HttpStatusCode.OK));
                 using HttpResponseMessage response = await client.PostAsJsonAsync("/api/v1/scan-jobs",
-                    new StartScanJobRequest(directory, []), timeout.Token);
+                    new CompareFoldersRequest(directory, []), timeout.Token);
                 Assert.That(response.StatusCode, Is.EqualTo(HttpStatusCode.Accepted));
                 ScanJobResponse accepted = (await response.Content.ReadFromJsonAsync<ScanJobResponse>(json, timeout.Token))!;
                 Assert.That(response.Headers.Location?.ToString(), Is.EqualTo($"/api/v1/scan-jobs/{accepted.Id}"));
@@ -51,10 +52,22 @@ namespace HwSync.Host.Tests
                 ScanJobResponse terminal = (await cancel.Content.ReadFromJsonAsync<ScanJobResponse>(json, timeout.Token))!;
                 Assert.That(terminal.Status, Is.EqualTo(ScanJobState.Completed));
                 using HttpResponseMessage invalid = await client.PostAsJsonAsync("/api/v1/scan-jobs",
-                    new { rootPath = "relative", previousSnapshot = Array.Empty<FileSnapshotDto>() }, timeout.Token);
+                    new { serverRootPath = "relative", clientSnapshot = Array.Empty<FileSnapshotDto>() }, timeout.Token);
                 Assert.That(invalid.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
                 using HttpResponseMessage missing = await client.GetAsync($"/api/v1/scan-jobs/{Guid.NewGuid()}", timeout.Token);
                 Assert.That(missing.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
+                // Проверяем клиентскую библиотеку против реального HTTP API.
+                HwSync.Api.Client.IHwSyncApiClient api = new HwSync.Api.Client.HwSyncApiClient(client, client.BaseAddress!);
+                Assert.That((await api.GetHealthAsync(timeout.Token)).Status, Is.EqualTo("ok"));
+                ScanJobResponse clientJob = await api.StartComparisonAsync(new(directory, []), timeout.Token);
+                do
+                {
+                    await Task.Delay(20, timeout.Token);
+                    clientJob = await api.GetScanAsync(clientJob.Id, timeout.Token);
+                } while (clientJob.FinishedAt is null);
+                Assert.That(clientJob.Status, Is.EqualTo(ScanJobState.Completed));
+                Assert.That(clientJob.Changes!.Single().Current!.RelativePath, Is.EqualTo("sample.txt"));
+                Assert.That((await api.CancelScanAsync(clientJob.Id, timeout.Token)).Status, Is.EqualTo(ScanJobState.Completed));
             }
             finally
             {

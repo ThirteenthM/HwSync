@@ -14,16 +14,16 @@ namespace HwSync.Api.Handlers
             _jobs = jobs;
         }
 
-        public ActionResult<ScanJobResponse> Start(StartScanJobRequest request)
+        public ActionResult<ScanJobResponse> Start(CompareFoldersRequest request)
         {
             try
             {
-                if (request.PreviousSnapshot is null || request.PreviousSnapshot.Any(file => file is null))
+                if (request.ClientSnapshot is null || request.ClientSnapshot.Any(file => file is null))
                 {
-                    throw new ArgumentException("PreviousSnapshot должен быть массивом снимков файлов.");
+                    throw new ArgumentException("ClientSnapshot должен быть массивом снимков файлов.");
                 }
-                ChangeScanRequest scanRequest = new(request.RootPath,
-                    request.PreviousSnapshot.Select(file => new FileSnapshot(file.RelativePath, file.Size, file.LastWriteTimeUtc)).ToArray());
+                ChangeScanRequest scanRequest = new(request.ServerRootPath,
+                    request.ClientSnapshot.Select(file => new FileSnapshot(file.RelativePath, file.Size, file.LastWriteTimeUtc)).ToArray());
                 ScanJob job = _jobs.Start(scanRequest);
                 return new AcceptedResult($"/api/v1/scan-jobs/{job.Id}", ToResponse(job));
             }

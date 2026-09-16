@@ -29,8 +29,8 @@ dotnet run --project src/HwSync.Host -- --console --set Urls=http://localhost:50
 
 ```powershell
 $body = @{
-    rootPath = 'D:\#Homework\HwSync'
-    previousSnapshot = @()
+    serverServerRootPath = 'D:\#Homework\HwSync'
+    clientSnapshot = @()
 } | ConvertTo-Json -Depth 10
 $job = Invoke-RestMethod -Method Post -Uri 'http://localhost:5080/api/v1/scan-jobs' -ContentType 'application/json' -Body $body
 Invoke-RestMethod -Uri "http://localhost:5080/api/v1/scan-jobs/$($job.id)"
@@ -38,7 +38,7 @@ Invoke-RestMethod -Uri "http://localhost:5080/api/v1/scan-jobs/$($job.id)"
 Invoke-RestMethod -Method Post -Uri "http://localhost:5080/api/v1/scan-jobs/$($job.id)/cancel"
 ```
 
-RootPath — абсолютный путь на компьютере сервера, а не на компьютере будущего сетевого клиента. PreviousSnapshot — обязательный массив прежних FileSnapshot (relativePath, size, lastWriteTimeUtc). Пустой массив означает, что все найденные файлы будут отмечены Created. Сервер не сохраняет предыдущий снимок автоматически.
+ServerRootPath — абсолютный путь на компьютере сервера, а не на компьютере будущего сетевого клиента. ClientSnapshot — обязательный массив FileSnapshot клиентской папки (relativePath, size, lastWriteTimeUtc). Пустой массив означает, что все найденные файлы будут отмечены Created. Сервер не сохраняет предыдущий снимок автоматически.
 
 ## Выполнение и ограничения
 
@@ -54,7 +54,7 @@ RootPath — абсолютный путь на компьютере серве�
 
 ## Проекты API и клиентский пакет
 
-HwSync.Api.Contracts содержит только публичные типы HTTP: StartScanJobRequest, ScanJobResponse, FileSnapshotDto, FileChangeDto, FileChangeKind, ScanJobState и HealthResponse. Он не ссылается на ASP.NET Core, Abstractions, Core или Host. Внутренние модели не являются сетевыми контрактами: ScanJobHandler явно преобразует их в DTO.
+HwSync.Api.Contracts содержит только публичные типы HTTP: CompareFoldersRequest, ScanJobResponse, FileSnapshotDto, FileChangeDto, FileChangeKind, ScanJobState и HealthResponse. Он не ссылается на ASP.NET Core, Abstractions, Core или Host. Внутренние модели не являются сетевыми контрактами: ScanJobHandler явно преобразует их в DTO.
 
 HwSync.Api содержит Controllers и Handlers. ScanJobsController только делегирует запросы ScanJobHandler; обработчик вызывает IScanJobService и формирует HTTP-ответ. HealthController возвращает статический ответ доступности. AddHwSyncApi регистрирует обработчик, MVC-контроллеры и JSON-настройки; MapHwSyncApi подключает маршруты и ограничение локального доступа.
 
@@ -67,3 +67,11 @@ dotnet pack src/HwSync.Api.Contracts -c Release -o artifacts/packages
 ```
 
 Пакет HwSync.Api.Contracts имеет начальную версию 0.1.0 и целевую платформу net10.0, как решение. Для клиента на более старой платформе нужно отдельно согласовать поддерживаемые target frameworks. Публикация в NuGet пока не настроена и не выполнялась. Ошибки API используют стандартный ProblemDetails, ошибки валидации — ValidationProblemDetails ASP.NET Core.
+
+## Сравнение папок (контракт 0.2.0)
+
+POST /api/v1/scan-jobs теперь принимает CompareFoldersRequest(serverRootPath, clientSnapshot). Старые JSON-поля rootPath и previousSnapshot больше не поддерживаются; Host и клиент нужно обновить вместе. ClientSnapshot — текущее состояние клиентской папки, а не исторический снимок. Сравнение направлено сервер → клиент: Created — только на сервере; Deleted — только у клиента; Modified — отличаются размер или время. Previous в ответе относится к клиенту, Current — к серверу. Содержимое файлов не передаётся и не изменяется.
+
+## Копирование и профили
+
+Добавлено копирование отсутствующих файлов и серверный журнал удалений. Профили и текущие ограничения описаны в [Синхронизация](SYNCHRONIZATION.md).

@@ -1,13 +1,16 @@
 <Solution>
     <Folder Name="/src/">
         <Project Path="src/HwSync.Abstractions/HwSync.Abstractions.csproj" />
+        <Project Path="src/HwSync.Api.Client/HwSync.Api.Client.csproj" />
         <Project Path="src/HwSync.Api.Contracts/HwSync.Api.Contracts.csproj" />
         <Project Path="src/HwSync.Api/HwSync.Api.csproj" />
+        <Project Path="src/HwSync.Client.Windows/HwSync.Client.Windows.csproj" />
         <Project Path="src/HwSync.Core/HwSync.Core.csproj" />
         <Project Path="src/HwSync.Host/HwSync.Host.csproj" />
         <Project Path="src/HwSync.Infrastructure/HwSync.Infrastructure.csproj" />
     </Folder>
     <Folder Name="/tests/">
+        <Project Path="tests/HwSync.Client.Tests/HwSync.Client.Tests.csproj" />
         <Project Path="tests/HwSync.Core.Tests/HwSync.Core.Tests.csproj" />
         <Project Path="tests/HwSync.Host.Tests/HwSync.Host.Tests.csproj" />
     </Folder>

@@ -5,14 +5,30 @@ namespace HwSync.Infrastructure.FileSystem;
 
 public sealed class DirectorySnapshotProvider : IFileSnapshotProvider
 {
+    private static IEnumerable<string> EnumerateFiles(string rootPath)
+    {
+        Stack<string> directories = new();
+        directories.Push(rootPath);
+        while (directories.TryPop(out string? directory))
+        {
+            if ((File.GetAttributes(directory) & FileAttributes.ReparsePoint) != 0)
+            { throw new IOException("Ссылки и junction не поддерживаются при полном сканировании."); }
+            foreach (string entry in Directory.EnumerateFileSystemEntries(directory))
+            {
+                FileAttributes attributes = File.GetAttributes(entry);
+                if ((attributes & FileAttributes.ReparsePoint) != 0)
+                { throw new IOException("Ссылки и junction не поддерживаются при полном сканировании."); }
+                if ((attributes & FileAttributes.Directory) != 0) { directories.Push(entry); }
+                else { yield return entry; }
+            }
+        }
+    }
     public IReadOnlyCollection<FileSnapshot> GetSnapshot(string rootPath)
     {
         List<FileSnapshot> snapshots = [];
 
-        foreach (string filePath in Directory.EnumerateFiles(
-            rootPath,
-            "*",
-            SearchOption.AllDirectories))
+        foreach (string filePath in EnumerateFiles(
+            rootPath))
         {
             FileInfo fileInfo = new(filePath);
 

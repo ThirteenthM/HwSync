@@ -1,6 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net10.0</TargetFramework>
+    <TargetFramework>net10.0-windows</TargetFramework>
+    <UseWPF>true</UseWPF>
     <LangVersion>latest</LangVersion>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
@@ -19,8 +20,5 @@
     <Using Include="NUnit.Framework" />
   </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\..\src\HwSync.Host\HwSync.Host.csproj" />
-    <ProjectReference Include="..\..\src\HwSync.Api.Client\HwSync.Api.Client.csproj" />
-  </ItemGroup>
+  <ItemGroup><ProjectReference Include="../../src/HwSync.Client.Windows/HwSync.Client.Windows.csproj" /></ItemGroup>
 </Project>

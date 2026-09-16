@@ -55,3 +55,7 @@ appsettings.json загружается из папки приложения, н
 Зарегистрированы IFileSnapshotProvider → DirectorySnapshotProvider, IChangeComparer → ChangeComparer, IChangeScanner → DirectoryChangeScanner. Сервисы создаются как transient; настройки будущих запусков не разделяются через singleton-экземпляры.
 
 В консоли используются стандартные логи Generic Host; при запуске службой подключается Windows Event Log (его стандартный порог — Warning). Остановка службы и Ctrl+C передают отмену фоновому обработчику.
+
+## Windows-клиент
+
+Для управления сканированием доступен [Windows-клиент](WINDOWS-CLIENT.md).

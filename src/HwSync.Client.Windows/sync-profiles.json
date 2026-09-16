@@ -1,0 +1,15 @@
+[
+  {
+    "ServerAddress": "http://localhost:5080",
+    "Name": "Основная папка",
+    "Rules": {
+      "DifferentFiles": "Skip",
+      "MissingOnClient": "Copy",
+      "ServerDeletions": "RecordOnly",
+      "ClientOnlyFiles": "Keep"
+    },
+    "Id": "default",
+    "ServerRootPath": "e:\\HwSync\\Server\\",
+    "ClientRootPath": "e:\\HwSync\\Client001\\"
+  }
+]

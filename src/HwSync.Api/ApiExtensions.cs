@@ -13,6 +13,7 @@ namespace HwSync.Api
         public static IServiceCollection AddHwSyncApi(this IServiceCollection services)
         {
             services.AddTransient<ScanJobHandler>();
+            services.AddTransient<FileTransferHandler>();
             services.AddControllers().AddApplicationPart(typeof(ScanJobsController).Assembly)
                 .AddJsonOptions(options => options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
             return services;

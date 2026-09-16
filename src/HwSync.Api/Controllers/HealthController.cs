@@ -7,7 +7,8 @@ namespace HwSync.Api.Controllers
     [Route("health")]
     public sealed class HealthController : ControllerBase
     {
+        // MVC публикует только методы экземпляра: этот метод нельзя делать static.
         [HttpGet]
-        public static HealthResponse Get() => new(@"ok - {DateTime.Now}");
+        public HealthResponse Get() => new("ok");
     }
 }

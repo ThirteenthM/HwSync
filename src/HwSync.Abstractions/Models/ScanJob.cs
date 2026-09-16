@@ -8,5 +8,5 @@ namespace HwSync.Abstractions.Models
         DateTimeOffset CreatedAt,
         DateTimeOffset? FinishedAt,
         IReadOnlyCollection<FileChange>? Changes,
-        string? Error);
+        string? Error, string? SourceRootPath = null);
 }

@@ -16,6 +16,7 @@ namespace HwSync.Host.Tests
         public async Task Host_OutsideServiceManager_StartsAndStops(bool explicitConsoleMode)
         {
             Microsoft.AspNetCore.Builder.WebApplicationBuilder builder = HostBootstrap.CreateBuilder(explicitConsoleMode, ["Urls=http://127.0.0.1:0"]);
+            builder.Configuration["History:Directory"] = Path.Combine(TestContext.CurrentContext.WorkDirectory, "artifacts", "test-history", Guid.NewGuid().ToString("N"));
             builder.Logging.ClearProviders();
             using IHost host = builder.Build();
             using CancellationTokenSource timeout = new(TimeSpan.FromSeconds(10));
@@ -50,6 +51,7 @@ namespace HwSync.Host.Tests
         {
             Microsoft.AspNetCore.Builder.WebApplicationBuilder builder = HostBootstrap.CreateBuilder(
                 true, ["Logging:LogLevel:Default=Debug"]);
+            builder.Configuration["History:Directory"] = Path.Combine(TestContext.CurrentContext.WorkDirectory, "artifacts", "test-history", Guid.NewGuid().ToString("N"));
             builder.Logging.ClearProviders();
             using IHost host = builder.Build();
 
