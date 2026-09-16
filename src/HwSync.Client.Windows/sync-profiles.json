@@ -9,6 +9,7 @@
       "ClientOnlyFiles": "Keep"
     },
     "Id": "default",
+    "Reconciliation": { "ContentConflict": "KeepBoth", "DeletionConflict": "AskUser" },
     "ServerRootPath": "e:\\HwSync\\Server\\",
     "ClientRootPath": "e:\\HwSync\\Client001\\"
   }

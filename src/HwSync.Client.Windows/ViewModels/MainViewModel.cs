@@ -29,7 +29,8 @@ namespace HwSync.Client.Windows.ViewModels
             get => _selectedProfile;
             set
             {
-                if (!CanEditConnection || !SetProperty(ref _selectedProfile, value) || value is null) { return; }
+                if (!CanEditConnection || !SetProperty(ref _selectedProfile, value) || value is null)
+                { return; }
                 ServerAddress = value.ServerAddress;
                 RootPath = value.ServerRootPath;
                 ClientRootPath = value.ClientRootPath;
@@ -123,8 +124,7 @@ namespace HwSync.Client.Windows.ViewModels
                 IReadOnlyCollection<FileSnapshot> snapshot = await Task.Run(
                     () => _snapshotProvider.GetSnapshot(clientRoot), _lifetime.Token);
                 _lifetime.Token.ThrowIfCancellationRequested();
-                FileSnapshotDto[] clientSnapshot = snapshot.Select(file =>
-                    new FileSnapshotDto(file.RelativePath, file.Size, file.LastWriteTimeUtc)).ToArray();
+                FileSnapshotDto[] clientSnapshot = [.. snapshot.Select(file => new FileSnapshotDto(file.RelativePath, file.Size, file.LastWriteTimeUtc))];
                 Status = "Отправка снимка и запуск сравнения…";
                 ScanJobResponse job;
                 try
@@ -148,7 +148,8 @@ namespace HwSync.Client.Windows.ViewModels
         private async Task CopyMissingAsync()
         {
             ScanJobResponse? comparison = _completedComparison;
-            if (comparison is null || _jobClient is not IFileDownloadClient downloader) { return; }
+            if (comparison is null || _jobClient is not IFileDownloadClient downloader)
+            { return; }
             await ExecuteAsync(async () =>
             {
                 _completedComparison = null;
@@ -179,21 +180,26 @@ namespace HwSync.Client.Windows.ViewModels
             while (_activeJob is Guid id && _jobClient is not null)
             {
                 ScanJobResponse job = await _jobClient.GetScanAsync(id, _lifetime.Token);
-                if (_activeJob == id) { ApplyJob(job); }
-                if (HasActiveJob) { await Task.Delay(750, _lifetime.Token); }
+                if (_activeJob == id)
+                { ApplyJob(job); }
+                if (HasActiveJob)
+                { await Task.Delay(750, _lifetime.Token); }
             }
         }
 
         private async Task CancelAsync()
         {
-            if (_copyCancellation is not null) { _copyCancellation.Cancel(); return; }
-            if (_activeJob is not Guid id || _jobClient is null) { return; }
+            if (_copyCancellation is not null)
+            { _copyCancellation.Cancel(); return; }
+            if (_activeJob is not Guid id || _jobClient is null)
+            { return; }
             _cancelRequested = true;
             RefreshCommands();
             try
             {
                 ScanJobResponse job = await _jobClient.CancelScanAsync(id, _lifetime.Token);
-                if (_activeJob == id) { ApplyJob(job); }
+                if (_activeJob == id)
+                { ApplyJob(job); }
             }
             catch (Exception exception)
             {
@@ -239,12 +245,14 @@ namespace HwSync.Client.Windows.ViewModels
             _busy = true;
             Error = "";
             RefreshCommands();
-            try { await action(); }
+            try
+            { await action(); }
             catch (Exception exception)
             {
                 if (!_lifetime.IsCancellationRequested)
                 {
-                    if (exception is HwSyncApiException { StatusCode: HttpStatusCode.NotFound }) { _activeJob = null; }
+                    if (exception is HwSyncApiException { StatusCode: HttpStatusCode.NotFound })
+                    { _activeJob = null; }
                     Status = HasActiveJob ? "Опрос остановлен. Нажмите «Продолжить опрос»." : "Операция не выполнена";
                     Error = DescribeError(exception);
                 }

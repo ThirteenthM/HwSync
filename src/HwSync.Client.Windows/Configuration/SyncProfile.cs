@@ -1,3 +1,5 @@
+using HwSync.Abstractions.Models;
+
 namespace HwSync.Client.Windows.Configuration
 {
     public sealed class SyncProfile
@@ -8,6 +10,7 @@ namespace HwSync.Client.Windows.Configuration
         public string ServerRootPath { get; init; } = "";
         public string ClientRootPath { get; init; } = "";
         public ConflictRules Rules { get; init; } = new();
+        public ReconciliationRules Reconciliation { get; init; } = new();
     }
 
     public sealed class ConflictRules
