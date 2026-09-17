@@ -3,18 +3,10 @@ using HwSync.Abstractions.Models;
 
 namespace HwSync.Core.Services
 {
-    /// <summary>
-    /// Компаратор файлов - получает список файлов (текущий, предыдущий, и признак расхождения)
-    /// исключены файлы с одинаковыми атрибутами сравления расхождения.
-    /// </summary>
+    /// <summary>Сравнивает снимки по пути, размеру и времени изменения.</summary>
     public sealed class ChangeComparer : IChangeComparer
     {
-        /// <summary>
-        /// Компоратор.
-        /// </summary>
-        /// <param name="previous">Список предыдущих файлов.</param>
-        /// <param name="current">Список текущих файлов.</param>
-        /// <returns>Список файлов (текущий, предыдущий, и признак расхождения)</returns>
+        /// <summary>Возвращает только новые, изменённые и исчезнувшие файлы.</summary>
         public IReadOnlyCollection<FileChange> Compare(
             IReadOnlyCollection<FileSnapshot> previous,
             IReadOnlyCollection<FileSnapshot> current
@@ -53,12 +45,7 @@ namespace HwSync.Core.Services
             return changes;
         }
 
-        /// <summary>
-        /// Метод сравнения двух файлов.
-        /// </summary>
-        /// <param name="previousFile">Атрибуты предыдущего файла.</param>
-        /// <param name="currentFile">Атрибуты нового файла.</param>
-        /// <returns></returns>
+        /// <summary>Проверяет различие размера или времени записи.</summary>
         private static bool IsModified(
             FileSnapshot previousFile,
             FileSnapshot currentFile

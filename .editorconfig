@@ -9,6 +9,14 @@ insert_final_newline = true
 indent_style = space
 indent_size = 4
 
+# Braces and block contents on separate lines.
+csharp_new_line_before_open_brace = all
+csharp_new_line_before_else = true
+csharp_new_line_before_catch = true
+csharp_new_line_before_finally = true
+csharp_preserve_single_line_blocks = false
+csharp_preserve_single_line_statements = false
+
 # --- Spacing (Microsoft / .NET industry defaults) ---
 # Target style:
 #   if (condition)

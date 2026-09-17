@@ -4,6 +4,7 @@ using HwSync.Abstractions.Services;
 
 namespace HwSync.Core.Services
 {
+    /// <summary>Ограниченная очередь заданий с хранением результатов в памяти.</summary>
     public sealed class ScanJobService : IScanJobService
     {
         private const int Capacity = 100;
@@ -13,6 +14,7 @@ namespace HwSync.Core.Services
             Channel.CreateBounded<(Guid, ChangeScanRequest)>(Capacity);
         private bool _stopping;
 
+        /// <summary>Ставит сравнение папки в очередь.</summary>
         public ScanJob Start(ChangeScanRequest request)
         {
             ArgumentNullException.ThrowIfNull(request);
@@ -29,12 +31,18 @@ namespace HwSync.Core.Services
             ChangeScanRequest snapshot = new(request.RootPath, request.PreviousSnapshot.ToArray());
             lock (_gate)
             {
-                if (_stopping) { throw new InvalidOperationException("Host останавливается."); }
+                if (_stopping)
+                {
+                    throw new InvalidOperationException("Host останавливается.");
+                }
                 if (_jobs.Count >= Capacity)
                 {
                     ScanJob? oldest = _jobs.Values.Where(job => job.FinishedAt is not null)
                         .OrderBy(job => job.FinishedAt).FirstOrDefault();
-                    if (oldest is null) { throw new InvalidOperationException("Очередь заданий заполнена."); }
+                    if (oldest is null)
+                    {
+                        throw new InvalidOperationException("Очередь заданий заполнена.");
+                    }
                     _jobs.Remove(oldest.Id);
                 }
                 ScanJob job = new(Guid.NewGuid(), ScanJobStatus.Queued, DateTimeOffset.UtcNow, null, null, null, Path.GetFullPath(request.RootPath));
@@ -47,29 +55,45 @@ namespace HwSync.Core.Services
             }
         }
 
+        /// <summary>Возвращает состояние задания по идентификатору.</summary>
         public ScanJob? Get(Guid id)
         {
-            lock (_gate) { return _jobs.GetValueOrDefault(id); }
+            lock (_gate)
+            {
+                return _jobs.GetValueOrDefault(id);
+            }
         }
 
+        /// <summary>Запрашивает отмену задания по идентификатору.</summary>
         public ScanJob? Cancel(Guid id)
         {
             lock (_gate)
             {
-                if (!_jobs.TryGetValue(id, out ScanJob? job)) { return null; }
+                if (!_jobs.TryGetValue(id, out ScanJob? job))
+                {
+                    return null;
+                }
                 if (job.Status == ScanJobStatus.Queued)
                 {
-                    job = job with { Status = ScanJobStatus.Cancelled, FinishedAt = DateTimeOffset.UtcNow };
+                    job = job with
+                    {
+                        Status = ScanJobStatus.Cancelled,
+                        FinishedAt = DateTimeOffset.UtcNow
+                    };
                 }
                 else if (job.Status == ScanJobStatus.Running)
                 {
-                    job = job with { Status = ScanJobStatus.CancellationRequested };
+                    job = job with
+                    {
+                        Status = ScanJobStatus.CancellationRequested
+                    };
                 }
                 _jobs[id] = job;
                 return job;
             }
         }
 
+        /// <summary>Последовательно обрабатывает очередь до отмены работы.</summary>
         public async Task RunAsync(Func<ChangeScanRequest, IReadOnlyCollection<FileChange>> scan, CancellationToken stoppingToken)
         {
             using CancellationTokenRegistration registration = stoppingToken.Register(Stop);
@@ -79,9 +103,18 @@ namespace HwSync.Core.Services
                 {
                     lock (_gate)
                     {
-                        if (_stopping) { break; }
-                        if (!_jobs.TryGetValue(id, out ScanJob? job) || job.Status != ScanJobStatus.Queued) { continue; }
-                        _jobs[id] = job with { Status = ScanJobStatus.Running };
+                        if (_stopping)
+                        {
+                            break;
+                        }
+                        if (!_jobs.TryGetValue(id, out ScanJob? job) || job.Status != ScanJobStatus.Queued)
+                        {
+                            continue;
+                        }
+                        _jobs[id] = job with
+                        {
+                            Status = ScanJobStatus.Running
+                        };
                     }
                     IReadOnlyCollection<FileChange>? changes = null;
                     string? error = null;
@@ -109,10 +142,17 @@ namespace HwSync.Core.Services
                     }
                 }
             }
-            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested) { }
-            finally { Stop(); }
+            catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+            {
+
+            }
+            finally
+            {
+                Stop();
+            }
         }
 
+        /// <summary>Отмечает оставшиеся задания отменёнными при остановке службы.</summary>
         private void Stop()
         {
             lock (_gate)
@@ -123,11 +163,18 @@ namespace HwSync.Core.Services
                 {
                     if (job.Status == ScanJobStatus.Queued)
                     {
-                        _jobs[job.Id] = job with { Status = ScanJobStatus.Cancelled, FinishedAt = DateTimeOffset.UtcNow };
+                        _jobs[job.Id] = job with
+                        {
+                            Status = ScanJobStatus.Cancelled,
+                            FinishedAt = DateTimeOffset.UtcNow
+                        };
                     }
                     else if (job.Status == ScanJobStatus.Running)
                     {
-                        _jobs[job.Id] = job with { Status = ScanJobStatus.CancellationRequested };
+                        _jobs[job.Id] = job with
+                        {
+                            Status = ScanJobStatus.CancellationRequested
+                        };
                     }
                 }
             }

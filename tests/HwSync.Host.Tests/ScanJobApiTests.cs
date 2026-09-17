@@ -9,8 +9,10 @@ using Microsoft.Extensions.Logging;
 
 namespace HwSync.Host.Tests
 {
+    /// <summary>Проверки жизненного цикла заданий через API.</summary>
     public class ScanJobApiTests
     {
+        /// <summary>Проверяет завершение задания и отклонение неверных запросов.</summary>
         [Test]
         public async Task Api_ScanCompletes_AndInvalidRequestsAreRejected()
         {
@@ -28,7 +30,10 @@ namespace HwSync.Host.Tests
             try
             {
                 await app.StartAsync(timeout.Token);
-                using HttpClient client = new() { BaseAddress = new Uri(app.Urls.Single()) };
+                using HttpClient client = new()
+                {
+                    BaseAddress = new Uri(app.Urls.Single())
+                };
                 using HttpResponseMessage health = await client.GetAsync("/health", timeout.Token);
                 Assert.That(health.StatusCode, Is.EqualTo(HttpStatusCode.OK));
                 using HttpResponseMessage response = await client.PostAsJsonAsync("/api/v1/scan-jobs",
@@ -52,7 +57,11 @@ namespace HwSync.Host.Tests
                 ScanJobResponse terminal = (await cancel.Content.ReadFromJsonAsync<ScanJobResponse>(json, timeout.Token))!;
                 Assert.That(terminal.Status, Is.EqualTo(ScanJobState.Completed));
                 using HttpResponseMessage invalid = await client.PostAsJsonAsync("/api/v1/scan-jobs",
-                    new { serverRootPath = "relative", clientSnapshot = Array.Empty<FileSnapshotDto>() }, timeout.Token);
+                    new
+                    {
+                        serverRootPath = "relative",
+                        clientSnapshot = Array.Empty<FileSnapshotDto>()
+                    }, timeout.Token);
                 Assert.That(invalid.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
                 using HttpResponseMessage missing = await client.GetAsync($"/api/v1/scan-jobs/{Guid.NewGuid()}", timeout.Token);
                 Assert.That(missing.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));

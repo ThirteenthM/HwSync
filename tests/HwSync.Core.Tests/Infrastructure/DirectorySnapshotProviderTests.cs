@@ -4,9 +4,11 @@ using HwSync.Infrastructure.FileSystem;
 
 namespace HwSync.Core.Tests.Infrastructure;
 
+/// <summary>Проверки чтения файлов и относительных путей.</summary>
 [TestFixture]
 public class DirectorySnapshotProviderTests
 {
+    /// <summary>Проверяет чтение атрибутов файла в папке.</summary>
     [Test]
     public void GetSnapshot_WhenDirectoryContainsFile_ReturnsFileSnapshot()
     {
@@ -47,6 +49,7 @@ public class DirectorySnapshotProviderTests
         }
     }
 
+    /// <summary>Проверяет относительный путь вложенного файла.</summary>
     [Test]
     public void GetSnapshot_WhenFileIsNested_ReturnsRelativePath()
     {
@@ -91,6 +94,7 @@ public class DirectorySnapshotProviderTests
         }
     }
 
+    /// <summary>Проверяет снимок пустой папки.</summary>
     [Test]
     public void GetSnapshot_WhenDirectoryIsEmpty_ReturnsEmptyCollection()
     {
@@ -104,6 +108,7 @@ public class DirectorySnapshotProviderTests
         Assert.That(snapshots, Is.Empty);
     }
 
+    /// <summary>Проверяет включение всех файлов в снимок.</summary>
     [Test]
     public void GetSnapshot_WhenDirectoryContainsMultipleFiles_ReturnsAllFiles()
     {

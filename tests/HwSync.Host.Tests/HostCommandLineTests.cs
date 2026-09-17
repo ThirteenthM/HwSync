@@ -2,8 +2,10 @@ using System.CommandLine;
 
 namespace HwSync.Host.Tests
 {
+    /// <summary>Проверки параметров командной строки Host.</summary>
     public class HostCommandLineTests
     {
+        /// <summary>Проверяет передачу режима и настроек из командной строки.</summary>
         [TestCase(false)]
         [TestCase(true)]
         public async Task Invoke_ValidOptions_PassesModeAndSettingsToHost(bool consoleMode)
@@ -15,7 +17,10 @@ namespace HwSync.Host.Tests
                 Assert.Multiple(() =>
                 {
                     Assert.That(mode, Is.EqualTo(consoleMode));
-                    Assert.That(settings, Is.EqualTo(new[] { "Logging:LogLevel:Default=Debug", "Example=with spaces=and equals" }));
+                    Assert.That(settings, Is.EqualTo(new[]
+{
+ "Logging:LogLevel:Default=Debug", "Example=with spaces=and equals"
+}));
                 });
                 return Task.CompletedTask;
             });
@@ -34,6 +39,7 @@ namespace HwSync.Host.Tests
             });
         }
 
+        /// <summary>Проверяет отказ запуска при неверных аргументах.</summary>
         [TestCase("--consol")]
         [TestCase("--set")]
         [TestCase("--set", "missing-equals")]
@@ -58,6 +64,7 @@ namespace HwSync.Host.Tests
             });
         }
 
+        /// <summary>Проверяет вывод справки без запуска сервера.</summary>
         [TestCase("--help")]
         [TestCase("--version")]
         public async Task Invoke_InformationOption_DoesNotStartHost(string argument)

@@ -3,8 +3,10 @@ using HwSync.Core.Services;
 
 namespace HwSync.Core.Tests.Services
 {
+    /// <summary>Проверки обработки и отмены очереди заданий.</summary>
     public class ScanJobServiceTests
     {
+        /// <summary>Проверяет отмену ожидающих и выполняющихся заданий.</summary>
         [Test]
         public async Task Cancel_QueuedAndRunningJobs_DiscardsResults()
         {
@@ -27,7 +29,10 @@ namespace HwSync.Core.Tests.Services
                 await entered.Task.WaitAsync(stop.Token);
                 Assert.That(jobs.Cancel(running.Id)!.Status, Is.EqualTo(ScanJobStatus.CancellationRequested));
                 release.Set();
-                while (jobs.Get(running.Id)!.FinishedAt is null) { await Task.Delay(10, stop.Token); }
+                while (jobs.Get(running.Id)!.FinishedAt is null)
+                {
+                    await Task.Delay(10, stop.Token);
+                }
                 Assert.Multiple(() =>
                 {
                     Assert.That(jobs.Get(running.Id)!.Status, Is.EqualTo(ScanJobStatus.Cancelled));
@@ -43,6 +48,7 @@ namespace HwSync.Core.Tests.Services
             Assert.Throws<InvalidOperationException>(() => jobs.Start(request));
         }
 
+        /// <summary>Проверяет продолжение очереди после ошибки сканирования.</summary>
         [Test]
         public async Task FailedScan_DoesNotStopNextJob()
         {
@@ -54,12 +60,18 @@ namespace HwSync.Core.Tests.Services
             using CancellationTokenSource stop = new(TimeSpan.FromSeconds(10));
             Task worker = Task.Run(() => jobs.RunAsync(scanRequest =>
             {
-                if (++calls == 1) { throw new IOException("private details"); }
+                if (++calls == 1)
+                {
+                    throw new IOException("private details");
+                }
                 return Array.Empty<FileChange>();
             }, stop.Token));
             try
             {
-                while (jobs.Get(second.Id)!.FinishedAt is null) { await Task.Delay(10, stop.Token); }
+                while (jobs.Get(second.Id)!.FinishedAt is null)
+                {
+                    await Task.Delay(10, stop.Token);
+                }
                 Assert.Multiple(() =>
                 {
                     Assert.That(jobs.Get(first.Id)!.Status, Is.EqualTo(ScanJobStatus.Failed));

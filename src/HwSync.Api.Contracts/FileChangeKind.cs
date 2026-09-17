@@ -1,4 +1,8 @@
 namespace HwSync.Api.Contracts
 {
-    public enum FileChangeKind { Created, Modified, Deleted }
+    /// <summary>Категория различия в контракте API.</summary>
+    public enum FileChangeKind
+    {
+        Created, Modified, Deleted
+    }
 }

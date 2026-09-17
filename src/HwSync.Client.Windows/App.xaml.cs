@@ -8,11 +8,20 @@ using HwSync.Client.Windows.ViewModels;
 
 namespace HwSync.Client.Windows
 {
+    /// <summary>Запуск WPF-клиента и управление временем жизни его зависимостей.</summary>
     public partial class App : Application
     {
-        private readonly HttpClient _httpClient = new() { Timeout = TimeSpan.FromSeconds(15) };
+        private readonly HttpClient _httpClient = new()
+        {
+            Timeout = TimeSpan.FromSeconds(15)
+        };
+        private readonly HttpClient _transferClient = new()
+        {
+            Timeout = Timeout.InfiniteTimeSpan
+        };
         private MainViewModel? _viewModel;
 
+        /// <summary>Читает настройки и открывает главное окно.</summary>
         protected override void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
@@ -32,7 +41,7 @@ namespace HwSync.Client.Windows
                 Shutdown(1);
                 return;
             }
-            _viewModel = new(address => new HwSyncApiClient(_httpClient, address), new HwSync.Infrastructure.FileSystem.DirectorySnapshotProvider())
+            _viewModel = new(address => new HwSyncApiClient(_httpClient, address, _transferClient, TimeSpan.FromSeconds(settings.FileTransferTimeoutSeconds)), new HwSync.Infrastructure.FileSystem.DirectorySnapshotProvider())
             {
                 ServerAddress = settings.ServerAddress,
                 RootPath = settings.ServerRootPath,
@@ -44,10 +53,12 @@ namespace HwSync.Client.Windows
             window.Show();
         }
 
+        /// <summary>Отменяет текущую работу и освобождает HTTP-клиенты.</summary>
         protected override void OnExit(ExitEventArgs e)
         {
             _viewModel?.Dispose();
             _httpClient.Dispose();
+            _transferClient.Dispose();
             base.OnExit(e);
         }
     }

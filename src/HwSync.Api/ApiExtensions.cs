@@ -8,8 +8,10 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace HwSync.Api
 {
+    /// <summary>Подключение HTTP API к приложению.</summary>
     public static class ApiExtensions
     {
+        /// <summary>Регистрирует контроллеры, обработчики и сериализацию API.</summary>
         public static IServiceCollection AddHwSyncApi(this IServiceCollection services)
         {
             services.AddTransient<ScanJobHandler>();
@@ -20,6 +22,7 @@ namespace HwSync.Api
             return services;
         }
 
+        /// <summary>Подключает маршруты API с ограничением на локальные подключения.</summary>
         public static void MapHwSyncApi(this WebApplication app)
         {
             // До появления сетевой аутентификации принимаем только локальные подключения.

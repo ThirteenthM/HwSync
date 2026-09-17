@@ -9,8 +9,10 @@ using Microsoft.Extensions.Logging;
 
 namespace HwSync.Host.Tests
 {
+    /// <summary>Проверки запуска и настройки Host.</summary>
     public class HostBootstrapTests
     {
+        /// <summary>Проверяет запуск и остановку вне диспетчера служб Windows.</summary>
         [TestCase(true)]
         [TestCase(false)]
         public async Task Host_OutsideServiceManager_StartsAndStops(bool explicitConsoleMode)
@@ -46,6 +48,7 @@ namespace HwSync.Host.Tests
             Assert.That(lifetime.ApplicationStopped.IsCancellationRequested, Is.True);
         }
 
+        /// <summary>Проверяет сохранение настроек при консольном запуске.</summary>
         [Test]
         public void CreateBuilder_ConsoleFlag_PreservesConfigurationArguments()
         {

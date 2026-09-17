@@ -5,15 +5,18 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace HwSync.Api.Handlers
 {
+    /// <summary>Преобразование запросов API в операции над заданиями.</summary>
     public sealed class ScanJobHandler
     {
         private readonly IScanJobService _jobs;
 
+        /// <summary>Принимает службу серверных заданий.</summary>
         public ScanJobHandler(IScanJobService jobs)
         {
             _jobs = jobs;
         }
 
+        /// <summary>Ставит сравнение папки в очередь.</summary>
         public ActionResult<ScanJobResponse> Start(CompareFoldersRequest request)
         {
             try
@@ -29,24 +32,35 @@ namespace HwSync.Api.Handlers
             }
             catch (ArgumentException exception)
             {
-                return new BadRequestObjectResult(new ProblemDetails { Status = 400, Detail = exception.Message });
+                return new BadRequestObjectResult(new ProblemDetails
+                {
+                    Status = 400,
+                    Detail = exception.Message
+                });
             }
             catch (InvalidOperationException exception)
             {
-                return new ConflictObjectResult(new ProblemDetails { Status = 409, Detail = exception.Message });
+                return new ConflictObjectResult(new ProblemDetails
+                {
+                    Status = 409,
+                    Detail = exception.Message
+                });
             }
         }
 
+        /// <summary>Возвращает состояние задания по идентификатору.</summary>
         public ActionResult<ScanJobResponse> Get(Guid id)
         {
             return _jobs.Get(id) is ScanJob job ? ToResponse(job) : new NotFoundResult();
         }
 
+        /// <summary>Запрашивает отмену задания по идентификатору.</summary>
         public ActionResult<ScanJobResponse> Cancel(Guid id)
         {
             return _jobs.Cancel(id) is ScanJob job ? ToResponse(job) : new NotFoundResult();
         }
 
+        /// <summary>Преобразует внутреннее задание в контракт API.</summary>
         private static ScanJobResponse ToResponse(ScanJob job)
         {
             return new(job.Id, job.Status switch
@@ -68,6 +82,7 @@ namespace HwSync.Api.Handlers
                 }, ToDto(change.Previous), ToDto(change.Current))).ToArray(), job.Error);
         }
 
+        /// <summary>Преобразует снимок файла в контракт API.</summary>
         private static FileSnapshotDto? ToDto(FileSnapshot? file)
         {
             return file is null ? null : new(file.RelativePath, file.Size, file.LastWriteTimeUtc);

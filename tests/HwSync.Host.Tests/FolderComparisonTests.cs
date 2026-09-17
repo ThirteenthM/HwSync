@@ -8,8 +8,10 @@ using Microsoft.Extensions.Logging;
 
 namespace HwSync.Host.Tests
 {
+    /// <summary>Проверки сравнения и файловых операций через настоящий HTTP.</summary>
     public class FolderComparisonTests
     {
+        /// <summary>Проверяет различия папок и ручную передачу файлов через API.</summary>
         [Test]
         public async Task TwoFolders_ReportDirectionalDifferences_WithoutChangingFiles()
         {
@@ -19,7 +21,10 @@ namespace HwSync.Host.Tests
             Directory.CreateDirectory(local);
             Directory.CreateDirectory(server);
             DateTime timestamp = new(2026, 9, 16, 0, 0, 0, DateTimeKind.Utc);
-            foreach (string directory in new[] { local, server })
+            foreach (string directory in new[]
+{
+ local, server
+})
             {
                 await File.WriteAllTextAsync(Path.Combine(directory, "same.txt"), "same");
                 File.SetLastWriteTimeUtc(Path.Combine(directory, "same.txt"), timestamp);
@@ -75,7 +80,9 @@ namespace HwSync.Host.Tests
                 IFileMutationClient mutations = (IFileMutationClient)api;
                 await mutations.EnsureServerFileMissingAsync(job.Id, "client-only.txt", timeout.Token);
                 await using (FileStream input = File.OpenRead(Path.Combine(local, "client-only.txt")))
-                { await mutations.UploadFileAsync(job.Id, "client-only.txt", input, timeout.Token); }
+                {
+                    await mutations.UploadFileAsync(job.Id, "client-only.txt", input, timeout.Token);
+                }
                 Assert.That(File.ReadAllText(Path.Combine(server, "client-only.txt")), Is.EqualTo("client"));
                 Assert.ThrowsAsync<HwSyncApiException>(async () =>
                     await mutations.EnsureServerFileMissingAsync(job.Id, "client-only.txt", timeout.Token));
@@ -112,9 +119,15 @@ namespace HwSync.Host.Tests
             finally
             {
                 await app.StopAsync(CancellationToken.None);
-                foreach (string directory in new[] { local, server })
+                foreach (string directory in new[]
+{
+ local, server
+})
                 {
-                    foreach (string file in Directory.GetFiles(directory)) { File.Delete(file); }
+                    foreach (string file in Directory.GetFiles(directory))
+                    {
+                        File.Delete(file);
+                    }
                     Directory.Delete(directory);
                 }
                 Directory.Delete(root);

@@ -1,12 +1,12 @@
 using HwSync.Abstractions.Models;
+
 namespace HwSync.Infrastructure.FileSystem
 {
-    public sealed record FileCopyResult(string RelativePath, bool Copied, string? Error);
-
+    /// <summary>Последовательное копирование отсутствующих файлов через временные файлы.</summary>
     public sealed class MissingFileSynchronizer
     {
-        public async Task<IReadOnlyList<FileCopyResult>> CopyAsync(string clientRoot, IReadOnlyCollection<FileSnapshot> files,
-            Func<FileSnapshot, Stream, CancellationToken, Task> download, CancellationToken cancellationToken)
+        /// <summary>Копирует файлы без перезаписи и удаляет незавершённые временные файлы.</summary>
+        public async Task<IReadOnlyList<FileCopyResult>> CopyAsync(string clientRoot, IReadOnlyCollection<FileSnapshot> files, Func<FileSnapshot, Stream, CancellationToken, Task> download, CancellationToken cancellationToken)
         {
             List<FileCopyResult> results = new();
             foreach (FileSnapshot file in files)
@@ -17,7 +17,11 @@ namespace HwSync.Infrastructure.FileSystem
                 {
                     string target = SafeFilePath.Resolve(clientRoot, file.RelativePath);
                     if (File.Exists(target) || Directory.Exists(target))
-                    { results.Add(new(file.RelativePath, false, "Файл уже существует; сохранён без изменений.")); continue; }
+                    {
+                        results.Add(new(file.RelativePath, false, "Файл уже существует; сохранён без изменений."));
+                        continue;
+                    }
+
                     string directory = Path.GetDirectoryName(target)!;
                     Directory.CreateDirectory(directory);
                     SafeFilePath.Resolve(clientRoot, file.RelativePath);
@@ -26,8 +30,12 @@ namespace HwSync.Infrastructure.FileSystem
                     {
                         await download(file, output, cancellationToken);
                         await output.FlushAsync(cancellationToken);
-                        if (output.Length != file.Size) { throw new IOException("Размер полученного файла отличается от снимка."); }
+                        if (output.Length != file.Size)
+                        {
+                            throw new IOException("Размер полученного файла отличается от снимка.");
+                        }
                     }
+
                     cancellationToken.ThrowIfCancellationRequested();
                     File.SetLastWriteTimeUtc(temporary, file.LastWriteTimeUtc);
                     SafeFilePath.Resolve(clientRoot, file.RelativePath);
@@ -35,11 +43,23 @@ namespace HwSync.Infrastructure.FileSystem
                     temporary = null;
                     results.Add(new(file.RelativePath, true, null));
                 }
-                catch (OperationCanceledException) { throw; }
+                catch (OperationCanceledException)
+                {
+                    throw;
+                }
                 catch (Exception exception) when (exception is IOException or UnauthorizedAccessException or System.Net.Http.HttpRequestException)
-                { results.Add(new(file.RelativePath, false, exception.Message)); }
-                finally { if (temporary is not null && File.Exists(temporary)) { File.Delete(temporary); } }
+                {
+                    results.Add(new(file.RelativePath, false, exception.Message));
+                }
+                finally
+                {
+                    if (temporary is not null && File.Exists(temporary))
+                    {
+                        File.Delete(temporary);
+                    }
+                }
             }
+
             return results;
         }
     }

@@ -3,8 +3,10 @@ using HwSync.Abstractions.Models;
 
 namespace HwSync.Infrastructure.FileSystem;
 
+/// <summary>Чтение снимка папки без перехода по ссылкам и junction.</summary>
 public sealed class DirectorySnapshotProvider : IFileSnapshotProvider
 {
+    /// <summary>Обходит каталог, отклоняя ссылки и точки повторного анализа.</summary>
     private static IEnumerable<string> EnumerateFiles(string rootPath)
     {
         Stack<string> directories = new();
@@ -12,17 +14,29 @@ public sealed class DirectorySnapshotProvider : IFileSnapshotProvider
         while (directories.TryPop(out string? directory))
         {
             if ((File.GetAttributes(directory) & FileAttributes.ReparsePoint) != 0)
-            { throw new IOException("Ссылки и junction не поддерживаются при полном сканировании."); }
+            {
+                throw new IOException("Ссылки и junction не поддерживаются при полном сканировании.");
+            }
             foreach (string entry in Directory.EnumerateFileSystemEntries(directory))
             {
                 FileAttributes attributes = File.GetAttributes(entry);
                 if ((attributes & FileAttributes.ReparsePoint) != 0)
-                { throw new IOException("Ссылки и junction не поддерживаются при полном сканировании."); }
-                if ((attributes & FileAttributes.Directory) != 0) { directories.Push(entry); }
-                else { yield return entry; }
+                {
+                    throw new IOException("Ссылки и junction не поддерживаются при полном сканировании.");
+                }
+                if ((attributes & FileAttributes.Directory) != 0)
+                {
+                    directories.Push(entry);
+                }
+                else
+                {
+                    yield return entry;
+                }
             }
         }
     }
+
+    /// <summary>Возвращает снимок файлов относительно корневой папки.</summary>
     public IReadOnlyCollection<FileSnapshot> GetSnapshot(string rootPath)
     {
         List<FileSnapshot> snapshots = [];

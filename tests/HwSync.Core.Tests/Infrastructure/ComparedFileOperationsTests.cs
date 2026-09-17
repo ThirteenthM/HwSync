@@ -3,8 +3,10 @@ using HwSync.Abstractions.Models;
 using HwSync.Infrastructure.FileSystem;
 namespace HwSync.Core.Tests.Infrastructure
 {
+    /// <summary>Проверки защиты файлов при копировании и удалении.</summary>
     public class ComparedFileOperationsTests
     {
+        /// <summary>Проверяет защиту изменённых файлов и очистку неполных загрузок.</summary>
         [Test]
         public async Task Operations_PreserveChangedFilesAndRejectIncompleteUploads()
         {

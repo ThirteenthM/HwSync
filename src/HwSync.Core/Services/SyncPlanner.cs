@@ -3,12 +3,17 @@ using HwSync.Abstractions.Services;
 
 namespace HwSync.Core.Services
 {
+    /// <summary>Преобразование различий в односторонний план.</summary>
     public sealed class SyncPlanner : ISyncPlanner
     {
+        /// <summary>Назначает действия согласно выбранному режиму синхронизации.</summary>
         public SyncPlan Create(IReadOnlyCollection<FileChange> changes, SyncMode mode)
         {
             ArgumentNullException.ThrowIfNull(changes);
-            if (!Enum.IsDefined(mode)) { throw new ArgumentOutOfRangeException(nameof(mode)); }
+            if (!Enum.IsDefined(mode))
+            {
+                throw new ArgumentOutOfRangeException(nameof(mode));
+            }
             List<SyncPlanItem> items = new();
             HashSet<string> paths = new(StringComparer.OrdinalIgnoreCase);
             foreach (FileChange change in changes)

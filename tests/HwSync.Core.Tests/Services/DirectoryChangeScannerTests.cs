@@ -4,8 +4,10 @@ using HwSync.Core.Services;
 
 namespace HwSync.Core.Tests.Services
 {
+    /// <summary>Проверки взаимодействия сканера с поставщиком снимков.</summary>
     public partial class DirectoryChangeScannerTests
     {
+        /// <summary>Проверяет сравнение снимка именно запрошенной папки.</summary>
         [Test]
         public void Scan_WhenSnapshotsDiffer_ReturnsChangesForRequestedDirectory()
         {
@@ -31,11 +33,15 @@ namespace HwSync.Core.Tests.Services
 
             Assert.Multiple(() =>
             {
-                Assert.That(provider.RequestedRootPaths, Is.EqualTo(new[] { request.RootPath }));
+                Assert.That(provider.RequestedRootPaths, Is.EqualTo(new[]
+{
+ request.RootPath
+}));
                 Assert.That(changes, Is.EquivalentTo(expected));
             });
         }
 
+        /// <summary>Проверяет чтение свежего снимка при повторном запросе.</summary>
         [Test]
         public void Scan_WhenCalledAgain_UsesNewRequestAndFreshSnapshot()
         {
@@ -60,7 +66,10 @@ namespace HwSync.Core.Tests.Services
                 }));
                 Assert.That(secondChanges, Is.Empty);
                 Assert.That(provider.RequestedRootPaths,
-                    Is.EqualTo(new[] { firstRequest.RootPath, secondRequest.RootPath }));
+                    Is.EqualTo(new[]
+{
+ firstRequest.RootPath, secondRequest.RootPath
+}));
             });
         }
     }

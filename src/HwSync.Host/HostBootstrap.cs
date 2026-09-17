@@ -8,8 +8,10 @@ using Microsoft.Extensions.Hosting;
 
 namespace HwSync.Host
 {
+    /// <summary>Сборка зависимостей серверного приложения.</summary>
     public static class HostBootstrap
     {
+        /// <summary>Настраивает Host для консольного запуска или службы Windows.</summary>
         public static WebApplicationBuilder CreateBuilder(bool consoleMode, string[] configurationArgs)
         {
             WebApplicationOptions settings = new()

@@ -4,8 +4,10 @@ using HwSync.Core.Services;
 
 namespace HwSync.Core.Tests.Services
 {
+    /// <summary>Проверки обнаружения изменений атрибутов файлов.</summary>
     public partial class ChangeComparerTests
     {
+        /// <summary>Проверяет обнаружение нового файла.</summary>
         [Test]
         public void Compare_WhenFileIsNew_ReturnsCreatedChange()
         {
@@ -28,6 +30,7 @@ namespace HwSync.Core.Tests.Services
             });
         }
 
+        /// <summary>Проверяет обнаружение исчезнувшего файла.</summary>
         [Test]
         public void Compare_WhenFileIsDeleted_ReturnsDeletedChange()
         {
@@ -50,6 +53,7 @@ namespace HwSync.Core.Tests.Services
             });
         }
 
+        /// <summary>Проверяет обнаружение изменённого файла.</summary>
         [Test]
         public void Compare_WhenFileIsModified_ReturnsModifiedChange()
         {
@@ -72,6 +76,7 @@ namespace HwSync.Core.Tests.Services
             });
         }
 
+        /// <summary>Проверяет отсутствие различий у одинаковых снимков.</summary>
         [Test]
         public void Compare_WhenFileIsUnchanged_ReturnsNoChanges()
         {
@@ -86,6 +91,7 @@ namespace HwSync.Core.Tests.Services
             Assert.That(changes, Is.Empty);
         }
 
+        /// <summary>Проверяет обнаружение изменения размера.</summary>
         [Test]
         public void Compare_WhenFileSizeChanged_ReturnsModifiedChange()
         {
@@ -102,6 +108,7 @@ namespace HwSync.Core.Tests.Services
                 Is.EqualTo(FileChangeType.Modified));
         }
 
+        /// <summary>Проверяет обнаружение изменения времени записи.</summary>
         [Test]
         public void Compare_WhenLastWriteTimeChanged_ReturnsModifiedChange()
         {

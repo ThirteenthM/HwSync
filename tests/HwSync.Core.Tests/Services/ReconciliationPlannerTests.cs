@@ -4,10 +4,12 @@ using HwSync.Core.Services;
 
 namespace HwSync.Core.Tests.Services
 {
+    /// <summary>Проверки решений по изменениям и конфликтам сторон.</summary>
     public class ReconciliationPlannerTests
     {
         private static readonly Guid ClientId = Guid.NewGuid();
 
+        /// <summary>Проверяет решения относительно общего подтверждённого состояния.</summary>
         [TestCase(null, "A", null, ReconciliationAction.Download)]
         [TestCase(null, null, "A", ReconciliationAction.Upload)]
         [TestCase(null, "A", "B", ReconciliationAction.KeepBoth)]
@@ -30,6 +32,7 @@ namespace HwSync.Core.Tests.Services
             Assert.That(plan.Items.Single().Action, Is.EqualTo(expected));
         }
 
+        /// <summary>Проверяет конфликт старой копии с серверной отметкой удаления.</summary>
         [Test]
         public void Create_NewClientWithOldCopyAndServerTombstone_RequiresDecision()
         {
@@ -39,6 +42,7 @@ namespace HwSync.Core.Tests.Services
             Assert.That(plan.Items.Single().Action, Is.EqualTo(ReconciliationAction.NeedsDecision));
         }
 
+        /// <summary>Проверяет передачу файла, созданного после подтверждённого удаления.</summary>
         [Test]
         public void Create_AcknowledgedDeletionAndNewFile_UploadsRecreatedFile()
         {
@@ -48,6 +52,7 @@ namespace HwSync.Core.Tests.Services
             Assert.That(plan.Items.Single().Action, Is.EqualTo(ReconciliationAction.Upload));
         }
 
+        /// <summary>Проверяет отказ при откате серверной версии.</summary>
         [Test]
         public void Create_RejectsRolledBackServer()
         {
@@ -56,6 +61,7 @@ namespace HwSync.Core.Tests.Services
                 Files("B", 2), Files("A", 0), new()));
         }
 
+        /// <summary>Проверяет нормализацию путей и регистра хешей.</summary>
         [Test]
         public void Create_NormalizesWindowsPathsAndHashCase()
         {
@@ -66,6 +72,7 @@ namespace HwSync.Core.Tests.Services
             Assert.That(plan.Items.Single().Action, Is.EqualTo(ReconciliationAction.None));
         }
 
+        /// <summary>Проверяет отказ при небезопасных относительных путях.</summary>
         [TestCase("../file.txt")]
         [TestCase("C:/file.txt")]
         [TestCase("/file.txt")]
@@ -77,6 +84,7 @@ namespace HwSync.Core.Tests.Services
                 [new(path, 1, new string('A', 64))], [], new()));
         }
 
+        /// <summary>Создаёт тестовые версии с заданным хешем и номером.</summary>
         private static FileVersion[] Files(string? hash, long revision) =>
             hash is null ? [] : [new("file.txt", revision, new string(hash[0], 64))];
     }

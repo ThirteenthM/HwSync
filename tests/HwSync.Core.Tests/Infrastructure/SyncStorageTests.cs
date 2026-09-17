@@ -2,8 +2,10 @@ using HwSync.Abstractions.Models;
 using HwSync.Infrastructure.FileSystem;
 namespace HwSync.Core.Tests.Infrastructure
 {
+    /// <summary>Проверки истории удалений и безопасного копирования.</summary>
     public class SyncStorageTests
     {
+        /// <summary>Проверяет сохранение удалений только после исходного снимка.</summary>
         [Test]
         public void History_PersistsDeletionAndDoesNotInventFirstScanDeletes()
         {
@@ -29,10 +31,17 @@ namespace HwSync.Core.Tests.Infrastructure
             finally
             {
                 if (Directory.Exists(directory))
-                { foreach (string file in Directory.GetFiles(directory)) { File.Delete(file); } Directory.Delete(directory); }
+                {
+                    foreach (string file in Directory.GetFiles(directory))
+                    {
+                        File.Delete(file);
+                    }
+                    Directory.Delete(directory);
+                }
             }
         }
 
+        /// <summary>Проверяет сохранение существующих файлов и очистку неудачной загрузки.</summary>
         [Test]
         public async Task Copy_PreservesExistingAndCleansFailedDownload()
         {
@@ -44,13 +53,25 @@ namespace HwSync.Core.Tests.Infrastructure
                 MissingFileSynchronizer copy = new();
                 IReadOnlyList<FileCopyResult> result = await copy.CopyAsync(directory,
                     [new("existing.txt", 1, DateTime.UnixEpoch), new("partial.txt", 10, DateTime.UnixEpoch), new("../escape.txt", 1, DateTime.UnixEpoch)],
-                    async (file, output, token) => { await output.WriteAsync(new byte[] { 1 }, token); }, CancellationToken.None);
+                    async (file, output, token) =>
+{
+    await output.WriteAsync(new byte[]
+   {
+ 1
+   }, token);
+}, CancellationToken.None);
                 Assert.That(result.All(item => !item.Copied), Is.True);
                 Assert.That(File.ReadAllText(Path.Combine(directory, "existing.txt")), Is.EqualTo("original"));
                 Assert.That(Directory.GetFiles(directory), Has.Length.EqualTo(1));
             }
             finally
-            { foreach (string file in Directory.GetFiles(directory)) { File.Delete(file); } Directory.Delete(directory); }
+            {
+                foreach (string file in Directory.GetFiles(directory))
+                {
+                    File.Delete(file);
+                }
+                Directory.Delete(directory);
+            }
         }
     }
 }

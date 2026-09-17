@@ -4,8 +4,10 @@ using HwSync.Infrastructure.FileSystem;
 
 namespace HwSync.Core.Tests.Infrastructure
 {
+    /// <summary>Проверки сохранения подтверждённых состояний синхронизации.</summary>
     public class FolderSyncStateStoreTests
     {
+        /// <summary>Проверяет сохранение версий и изоляцию клиентов и папок.</summary>
         [Test]
         public void Save_ReloadsAcknowledgedVersionsAndSeparatesClientsAndFolders()
         {
@@ -21,11 +23,15 @@ namespace HwSync.Core.Tests.Infrastructure
             Assert.That(loaded!.Files, Is.EqualTo(state.Files));
             Assert.That(reopened.Load(Guid.NewGuid(), "folder"), Is.Null);
             Assert.That(reopened.Load(clientId, "another-folder"), Is.Null);
-            store.Save(state with { Files = [new("file.txt", 6, new string('B', 64))] });
+            store.Save(state with
+            {
+                Files = [new("file.txt", 6, new string('B', 64))]
+            });
             Assert.That(reopened.Load(clientId, "folder")!.Files.Single().Revision, Is.EqualTo(6));
             Assert.That(Directory.GetFiles(directory, "*.tmp"), Is.Empty);
         }
 
+        /// <summary>Проверяет отказ чтения повреждённого состояния вместо потери истории.</summary>
         [Test]
         public void Load_CorruptedStateDoesNotBecomeEmptyBaseline()
         {
