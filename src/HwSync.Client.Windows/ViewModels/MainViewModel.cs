@@ -60,6 +60,9 @@ namespace HwSync.Client.Windows.ViewModels
             StartCommand = new AsyncRelayCommand(StartAsync, () => !_busy && !HasActiveJob && !string.IsNullOrWhiteSpace(RootPath) && !string.IsNullOrWhiteSpace(ClientRootPath));
             ResumeCommand = new AsyncRelayCommand(ResumeAsync, () => !_busy && HasActiveJob);
             CopyCommand = new AsyncRelayCommand(CopyMissingAsync, () => !_busy && _completedComparison is not null && _jobClient is IFileDownloadClient);
+            UploadCommand = new AsyncRelayCommand(() => ApplyManualAsync("upload"), CanMutate);
+            DeleteServerCommand = new AsyncRelayCommand(() => ApplyManualAsync("delete-server"), CanMutate);
+            DeleteClientCommand = new AsyncRelayCommand(() => ApplyManualAsync("delete-client"), CanMutate);
             CancelCommand = new AsyncRelayCommand(CancelAsync, () => (_copyCancellation is not null || HasActiveJob) && !_cancelRequested);
         }
 
@@ -73,6 +76,11 @@ namespace HwSync.Client.Windows.ViewModels
         public string ResultSummary => $"Найдено различий: {Changes.Count}";
         public bool HasActiveJob => _activeJob.HasValue;
         public bool CanEditConnection => !_busy && !HasActiveJob;
+        public Func<string, IReadOnlyList<string>, bool>? ConfirmDeletion { get; set; }
+        public IAsyncRelayCommand UploadCommand { get; }
+        public IAsyncRelayCommand DeleteServerCommand { get; }
+        public IAsyncRelayCommand DeleteClientCommand { get; }
+        private bool CanMutate() => !_busy && _completedComparison is not null && _jobClient is IFileMutationClient;
         public IAsyncRelayCommand CopyCommand { get; }
         public IAsyncRelayCommand ConnectCommand { get; }
         public IAsyncRelayCommand StartCommand { get; }
@@ -173,6 +181,67 @@ namespace HwSync.Client.Windows.ViewModels
                 finally { _copyCancellation = null; RefreshCommands(); }
             });
         }
+        private async Task ApplyManualAsync(string operation)
+        {
+            ScanJobResponse? comparison = _completedComparison;
+            if (comparison is null || _jobClient is not IFileMutationClient remote)
+            { return; }
+            FileChangeKind kind = operation == "delete-server" ? FileChangeKind.Created : FileChangeKind.Deleted;
+            FileSnapshot[] files = comparison.Changes!.Where(change => change.ChangeType == kind)
+                .Select(change => kind == FileChangeKind.Created ? change.Current! : change.Previous!)
+                .Select(file => new FileSnapshot(file.RelativePath, file.Size, file.LastWriteTimeUtc)).ToArray();
+            if (files.Length == 0)
+            { Status = "Для выбранного действия нет файлов."; return; }
+            if (operation != "upload" && ConfirmDeletion?.Invoke(
+                operation == "delete-server" ? "на сервере" : "на клиенте",
+                files.Select(file => file.RelativePath).ToArray()) != true)
+            { return; }
+            await ExecuteAsync(async () =>
+            {
+                _completedComparison = null;
+                _cancelRequested = false;
+                using CancellationTokenSource cancellation = CancellationTokenSource.CreateLinkedTokenSource(_lifetime.Token);
+                _copyCancellation = cancellation;
+                RefreshCommands();
+                int completed = 0;
+                try
+                {
+                    IComparedFileOperations local = new ComparedFileOperations();
+                    ISourceFileReader reader = new SourceFileReader();
+                    foreach (FileSnapshot file in files)
+                    {
+                        cancellation.Token.ThrowIfCancellationRequested();
+                        Status = $"Обработка {completed + 1} из {files.Length}: {file.RelativePath}";
+                        if (operation == "upload")
+                        {
+                            await using Stream source = reader.OpenRead(_comparedClientRoot, file);
+                            await remote.UploadFileAsync(comparison.Id, file.RelativePath, source, cancellation.Token);
+                        }
+                        else if (operation == "delete-server")
+                        {
+                            local.EnsureMissing(_comparedClientRoot, file.RelativePath);
+                            await remote.DeleteServerFileAsync(comparison.Id, file.RelativePath, cancellation.Token);
+                        }
+                        else
+                        {
+                            await remote.EnsureServerFileMissingAsync(comparison.Id, file.RelativePath, cancellation.Token);
+                            cancellation.Token.ThrowIfCancellationRequested();
+                            local.DeleteUnchanged(_comparedClientRoot, file);
+                        }
+                        completed++;
+                    }
+                    Status = $"Выполнено: {completed}. Повторите сравнение.";
+                }
+                catch (Exception exception) when (exception is IOException or HttpRequestException or UnauthorizedAccessException or OperationCanceledException)
+                {
+                    Status = $"Операция остановлена. Выполнено: {completed} из {files.Length}. Повторите сравнение.";
+                    Error = exception is OperationCanceledException
+                        ? "Уже выполненные действия сохранены. Результат последнего запроса проверьте сравнением."
+                        : DescribeError(exception);
+                }
+                finally { _copyCancellation = null; RefreshCommands(); }
+            });
+        }
         private Task ResumeAsync() => ExecuteAsync(PollAsync);
 
         private async Task PollAsync()
@@ -270,6 +339,9 @@ namespace HwSync.Client.Windows.ViewModels
 
         private void RefreshCommands()
         {
+            UploadCommand.NotifyCanExecuteChanged();
+            DeleteServerCommand.NotifyCanExecuteChanged();
+            DeleteClientCommand.NotifyCanExecuteChanged();
             CopyCommand.NotifyCanExecuteChanged();
             ConnectCommand.NotifyCanExecuteChanged();
             StartCommand.NotifyCanExecuteChanged();

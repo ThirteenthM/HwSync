@@ -15,6 +15,18 @@ namespace HwSync.Api.Controllers
             _handler = handler;
         }
 
+        [HttpPut("{id:guid}/file")]
+        [DisableRequestSizeLimit]
+        public Task<IActionResult> Upload(Guid id, string relativePath, [FromServices] FileMutationHandler handler) =>
+            handler.ExecuteAsync(id, relativePath, "upload", Request.Body, HttpContext.RequestAborted);
+
+        [HttpDelete("{id:guid}/file")]
+        public Task<IActionResult> Delete(Guid id, string relativePath, [FromServices] FileMutationHandler handler) =>
+            handler.ExecuteAsync(id, relativePath, "delete", Stream.Null, HttpContext.RequestAborted);
+
+        [HttpPost("{id:guid}/verify-missing")]
+        public Task<IActionResult> VerifyMissing(Guid id, string relativePath, [FromServices] FileMutationHandler handler) =>
+            handler.ExecuteAsync(id, relativePath, "verify", Stream.Null, HttpContext.RequestAborted);
         [HttpGet("{id:guid}/file")]
         public IActionResult Download(Guid id, string relativePath, [FromServices] FileTransferHandler handler) => handler.Download(id, relativePath);
 

@@ -13,8 +13,37 @@ namespace HwSync.Client.Windows
             InitializeComponent();
             _viewModel = viewModel;
             DataContext = viewModel;
+            viewModel.ConfirmDeletion = ConfirmDeletion;
         }
 
+        private bool ConfirmDeletion(string side, IReadOnlyList<string> paths)
+        {
+            Window dialog = new()
+            {
+                Owner = this, Title = "Подтверждение удаления", Width = 680, Height = 460,
+                WindowStartupLocation = WindowStartupLocation.CenterOwner
+            };
+            System.Windows.Controls.DockPanel panel = new() { Margin = new Thickness(16) };
+            System.Windows.Controls.TextBlock description = new()
+            {
+                Text = $"Удалить файлы {side} без помещения в корзину? Всего: {paths.Count}.",
+                TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 0, 12)
+            };
+            System.Windows.Controls.DockPanel.SetDock(description, System.Windows.Controls.Dock.Top);
+            panel.Children.Add(description);
+            System.Windows.Controls.StackPanel buttons = new()
+            { Orientation = System.Windows.Controls.Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
+            System.Windows.Controls.Button cancel = new() { Content = "Отмена", IsCancel = true, IsDefault = true, Padding = new Thickness(16, 8, 16, 8) };
+            System.Windows.Controls.Button confirm = new() { Content = "Удалить", Padding = new Thickness(16, 8, 16, 8), Margin = new Thickness(8, 0, 0, 0) };
+            confirm.Click += (_, _) => dialog.DialogResult = true;
+            buttons.Children.Add(cancel);
+            buttons.Children.Add(confirm);
+            System.Windows.Controls.DockPanel.SetDock(buttons, System.Windows.Controls.Dock.Bottom);
+            panel.Children.Add(buttons);
+            panel.Children.Add(new System.Windows.Controls.ListBox { ItemsSource = paths, Margin = new Thickness(0, 0, 0, 12) });
+            dialog.Content = panel;
+            return dialog.ShowDialog() == true;
+        }
         protected override void OnClosing(CancelEventArgs e)
         {
             if (_viewModel.HasActiveJob && MessageBox.Show(this,

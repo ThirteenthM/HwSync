@@ -72,7 +72,30 @@ namespace HwSync.Host.Tests
                 Assert.That(File.GetLastWriteTimeUtc(Path.Combine(local, "server-only.txt")), Is.EqualTo(created.Current.LastWriteTimeUtc));
                 Assert.That(File.ReadAllText(Path.Combine(local, "different.txt")), Is.EqualTo("x"));
                 Assert.That(File.Exists(Path.Combine(local, "client-only.txt")), Is.True);
-                File.Delete(Path.Combine(server, "server-only.txt"));
+                IFileMutationClient mutations = (IFileMutationClient)api;
+                await mutations.EnsureServerFileMissingAsync(job.Id, "client-only.txt", timeout.Token);
+                await using (FileStream input = File.OpenRead(Path.Combine(local, "client-only.txt")))
+                { await mutations.UploadFileAsync(job.Id, "client-only.txt", input, timeout.Token); }
+                Assert.That(File.ReadAllText(Path.Combine(server, "client-only.txt")), Is.EqualTo("client"));
+                Assert.ThrowsAsync<HwSyncApiException>(async () =>
+                    await mutations.EnsureServerFileMissingAsync(job.Id, "client-only.txt", timeout.Token));
+                await using (MemoryStream input = new([1, 2, 3]))
+                {
+                    Assert.ThrowsAsync<HwSyncApiException>(async () =>
+                        await mutations.UploadFileAsync(job.Id, "client-only.txt", input, timeout.Token));
+                }
+                Assert.That(File.ReadAllText(Path.Combine(server, "client-only.txt")), Is.EqualTo("client"));
+                Assert.ThrowsAsync<HwSyncApiException>(async () =>
+                    await mutations.DeleteServerFileAsync(job.Id, "different.txt", timeout.Token));
+                Assert.ThrowsAsync<HwSyncApiException>(async () =>
+                    await mutations.DeleteServerFileAsync(job.Id, "../outside.txt", timeout.Token));
+                await File.AppendAllTextAsync(Path.Combine(server, "server-only.txt"), "changed");
+                Assert.ThrowsAsync<HwSyncApiException>(async () =>
+                    await mutations.DeleteServerFileAsync(job.Id, "server-only.txt", timeout.Token));
+                await File.WriteAllTextAsync(Path.Combine(server, "server-only.txt"), "server");
+                File.SetLastWriteTimeUtc(Path.Combine(server, "server-only.txt"), created.Current.LastWriteTimeUtc);
+                await mutations.DeleteServerFileAsync(job.Id, "server-only.txt", timeout.Token);
+                Assert.That(File.Exists(Path.Combine(server, "server-only.txt")), Is.False);
                 ScanJobResponse next = await api.StartComparisonAsync(new(server, snapshot), timeout.Token);
                 while (next.FinishedAt is null)
                 {

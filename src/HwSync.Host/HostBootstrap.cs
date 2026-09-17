@@ -28,6 +28,7 @@ namespace HwSync.Host
                 builder.Configuration["History:Directory"] ?? Path.Combine(
                     Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "HwSync", "ServerHistory")));
             builder.Services.AddTransient<ISourceFileReader, SourceFileReader>();
+            builder.Services.AddTransient<IComparedFileOperations, ComparedFileOperations>();
             builder.Services.AddTransient<IFileSnapshotProvider, DirectorySnapshotProvider>();
             builder.Services.AddTransient<IChangeComparer, ChangeComparer>();
             builder.Services.AddTransient<IChangeScanner, DirectoryChangeScanner>();

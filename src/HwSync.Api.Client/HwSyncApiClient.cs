@@ -5,7 +5,7 @@ using HwSync.Api.Contracts;
 
 namespace HwSync.Api.Client
 {
-    public sealed class HwSyncApiClient : IHwSyncApiClient, IFileDownloadClient
+    public sealed class HwSyncApiClient : IHwSyncApiClient, IFileDownloadClient, IFileMutationClient
     {
         private static readonly JsonSerializerOptions JsonOptions = CreateJsonOptions();
         private readonly HttpClient _httpClient;
@@ -44,6 +44,22 @@ namespace HwSync.Api.Client
             if (!response.IsSuccessStatusCode)
             { throw new HwSyncApiException(response.StatusCode, $"Не удалось получить файл: HTTP {(int)response.StatusCode}. Повторите сравнение."); }
             await response.Content.CopyToAsync(destination, cancellationToken).ConfigureAwait(false);
+        }
+        public Task UploadFileAsync(Guid jobId, string relativePath, Stream source, CancellationToken token) =>
+            MutateAsync(HttpMethod.Put, jobId, "file", relativePath, source, token);
+        public Task DeleteServerFileAsync(Guid jobId, string relativePath, CancellationToken token) =>
+            MutateAsync(HttpMethod.Delete, jobId, "file", relativePath, null, token);
+        public Task EnsureServerFileMissingAsync(Guid jobId, string relativePath, CancellationToken token) =>
+            MutateAsync(HttpMethod.Post, jobId, "verify-missing", relativePath, null, token);
+
+        private async Task MutateAsync(HttpMethod method, Guid jobId, string endpoint, string relativePath, Stream? source, CancellationToken token)
+        {
+            using HttpRequestMessage request = new(method, new Uri(_serverAddress,
+                $"api/v1/scan-jobs/{jobId}/{endpoint}?relativePath={Uri.EscapeDataString(relativePath)}"));
+            if (source is not null) { request.Content = new StreamContent(source); }
+            using HttpResponseMessage response = await _httpClient.SendAsync(request, token).ConfigureAwait(false);
+            if (!response.IsSuccessStatusCode)
+            { throw new HwSyncApiException(response.StatusCode, $"Операция с файлом не выполнена: HTTP {(int)response.StatusCode}. Повторите сравнение."); }
         }
         private async Task<T> SendAsync<T>(HttpMethod method, string path, CompareFoldersRequest? body, CancellationToken cancellationToken)
         {

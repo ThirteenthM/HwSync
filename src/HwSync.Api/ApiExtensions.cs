@@ -14,6 +14,7 @@ namespace HwSync.Api
         {
             services.AddTransient<ScanJobHandler>();
             services.AddTransient<FileTransferHandler>();
+            services.AddTransient<FileMutationHandler>();
             services.AddControllers().AddApplicationPart(typeof(ScanJobsController).Assembly)
                 .AddJsonOptions(options => options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
             return services;
