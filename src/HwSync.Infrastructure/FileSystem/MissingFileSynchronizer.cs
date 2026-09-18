@@ -2,10 +2,14 @@ using HwSync.Abstractions.Models;
 
 namespace HwSync.Infrastructure.FileSystem
 {
-    /// <summary>Последовательное копирование отсутствующих файлов через временные файлы.</summary>
+    /// <summary>
+    /// Последовательное копирование отсутствующих файлов через временные файлы.
+    /// </summary>
     public sealed class MissingFileSynchronizer
     {
-        /// <summary>Копирует файлы без перезаписи и удаляет незавершённые временные файлы.</summary>
+        /// <summary>
+        /// Копирует файлы без перезаписи и удаляет незавершённые временные файлы.
+        /// </summary>
         public async Task<IReadOnlyList<FileCopyResult>> CopyAsync(string clientRoot, IReadOnlyCollection<FileSnapshot> files, Func<FileSnapshot, Stream, CancellationToken, Task> download, CancellationToken cancellationToken)
         {
             List<FileCopyResult> results = new();

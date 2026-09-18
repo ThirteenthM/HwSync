@@ -8,10 +8,14 @@ using Microsoft.Extensions.Logging;
 
 namespace HwSync.Host.Tests
 {
-    /// <summary>Проверки сравнения и файловых операций через настоящий HTTP.</summary>
+    /// <summary>
+    /// Проверки сравнения и файловых операций через настоящий HTTP.
+    /// </summary>
     public class FolderComparisonTests
     {
-        /// <summary>Проверяет различия папок и ручную передачу файлов через API.</summary>
+        /// <summary>
+        /// Проверяет различия папок и ручную передачу файлов через API.
+        /// </summary>
         [Test]
         public async Task TwoFolders_ReportDirectionalDifferences_WithoutChangingFiles()
         {

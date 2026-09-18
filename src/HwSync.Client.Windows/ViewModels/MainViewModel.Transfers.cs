@@ -12,10 +12,14 @@ using HwSync.Api.Contracts;
 
 namespace HwSync.Client.Windows.ViewModels
 {
-    /// <summary>Состояние формы и управление командами сравнения и синхронизации.</summary>
+    /// <summary>
+    /// Состояние формы и управление командами сравнения и синхронизации.
+    /// </summary>
     public sealed partial class MainViewModel : ObservableObject, IDisposable
     {
-        /// <summary>Скачивает только отсутствующие клиентские файлы выбранного сравнения.</summary>
+        /// <summary>
+        /// Скачивает только отсутствующие клиентские файлы выбранного сравнения.
+        /// </summary>
         private async Task CopyMissingAsync()
         {
             ScanJobResponse? comparison = _completedComparison;
@@ -31,12 +35,26 @@ namespace HwSync.Client.Windows.ViewModels
                 using CancellationTokenSource cancellation = CancellationTokenSource.CreateLinkedTokenSource(_lifetime.Token);
                 _copyCancellation = cancellation;
                 RefreshCommands();
+                BeginTransferMetrics("Сервер → клиент");
                 try
                 {
                     FileSnapshot[] files = comparison.Changes!.Where(change => change.ChangeType == FileChangeKind.Created).Select(change => new FileSnapshot(change.Current!.RelativePath, change.Current.Size, change.Current.LastWriteTimeUtc)).ToArray();
                     Status = $"Копирование отсутствующих файлов: {files.Length}…";
                     MissingFileSynchronizer synchronizer = new();
-                    IReadOnlyList<FileCopyResult> results = await synchronizer.CopyAsync(_comparedClientRoot, files, (file, stream, token) => downloader.DownloadFileAsync(comparison.Id, file.RelativePath, stream, token), cancellation.Token);
+                    List<FileCopyResult> results = new();
+                    for (int index = 0; index < files.Length; index++)
+                    {
+                        cancellation.Token.ThrowIfCancellationRequested();
+                        FileSnapshot file = files[index];
+                        Status = $"Копирование {index + 1} из {files.Length}: {file.RelativePath}";
+                        IReadOnlyList<FileCopyResult> fileResults = await MeasureTransferAsync(file,
+                            () => synchronizer.CopyAsync(
+                                _comparedClientRoot, [file],
+                                (snapshot, stream, token) => downloader.DownloadFileAsync(comparison.Id, snapshot.RelativePath, stream, token),
+                                cancellation.Token),
+                            results => results.Single().Copied);
+                        results.AddRange(fileResults);
+                    }
                     Status = $"Скопировано: {results.Count(result => result.Copied)}. Пропущено или с ошибкой: {results.Count(result => !result.Copied)}. Повторите сравнение.";
                     Error = string.Join("\n", results.Where(result => !result.Copied).Take(3).Select(result => result.RelativePath + ": " + result.Error));
                 }
@@ -46,13 +64,16 @@ namespace HwSync.Client.Windows.ViewModels
                 }
                 finally
                 {
+                    CompleteTransferMetrics();
                     _copyCancellation = null;
                     RefreshCommands();
                 }
             });
         }
 
-        /// <summary>Выполняет выбранное файловое действие с подтверждением удаления.</summary>
+        /// <summary>
+        /// Выполняет выбранное файловое действие с подтверждением удаления.
+        /// </summary>
         private async Task ApplyManualAsync(ManualFileOperation operation)
         {
             ScanJobResponse? comparison = _completedComparison;
@@ -81,6 +102,7 @@ namespace HwSync.Client.Windows.ViewModels
                 using CancellationTokenSource cancellation = CancellationTokenSource.CreateLinkedTokenSource(_lifetime.Token);
                 _copyCancellation = cancellation;
                 RefreshCommands();
+                BeginTransferMetrics("Клиент → сервер", operation == ManualFileOperation.Upload);
                 int completed = 0;
                 try
                 {
@@ -92,8 +114,12 @@ namespace HwSync.Client.Windows.ViewModels
                         Status = $"Обработка {completed + 1} из {files.Length}: {file.RelativePath}";
                         if (operation == ManualFileOperation.Upload)
                         {
-                            await using Stream source = reader.OpenRead(_comparedClientRoot, file);
-                            await remote.UploadFileAsync(comparison.Id, file.RelativePath, source, cancellation.Token);
+                            await MeasureTransferAsync(file, async () =>
+                            {
+                                await using Stream source = reader.OpenRead(_comparedClientRoot, file);
+                                await remote.UploadFileAsync(comparison.Id, file.RelativePath, source, cancellation.Token);
+                                return true;
+                            }, completed => completed);
                         }
                         else if (operation == ManualFileOperation.DeleteServer)
                         {
@@ -119,6 +145,7 @@ namespace HwSync.Client.Windows.ViewModels
                 }
                 finally
                 {
+                    CompleteTransferMetrics();
                     _copyCancellation = null;
                     RefreshCommands();
                 }

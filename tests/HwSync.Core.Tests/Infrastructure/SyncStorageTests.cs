@@ -2,10 +2,14 @@ using HwSync.Abstractions.Models;
 using HwSync.Infrastructure.FileSystem;
 namespace HwSync.Core.Tests.Infrastructure
 {
-    /// <summary>Проверки истории удалений и безопасного копирования.</summary>
+    /// <summary>
+    /// Проверки истории удалений и безопасного копирования.
+    /// </summary>
     public class SyncStorageTests
     {
-        /// <summary>Проверяет сохранение удалений только после исходного снимка.</summary>
+        /// <summary>
+        /// Проверяет сохранение удалений только после исходного снимка.
+        /// </summary>
         [Test]
         public void History_PersistsDeletionAndDoesNotInventFirstScanDeletes()
         {
@@ -41,7 +45,9 @@ namespace HwSync.Core.Tests.Infrastructure
             }
         }
 
-        /// <summary>Проверяет сохранение существующих файлов и очистку неудачной загрузки.</summary>
+        /// <summary>
+        /// Проверяет сохранение существующих файлов и очистку неудачной загрузки.
+        /// </summary>
         [Test]
         public async Task Copy_PreservesExistingAndCleansFailedDownload()
         {

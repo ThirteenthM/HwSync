@@ -1,6 +1,8 @@
 namespace HwSync.Core.Tests.Helpers;
 
-/// <summary>Изолированная временная папка для файловых тестов.</summary>
+/// <summary>
+/// Изолированная временная папка для файловых тестов.
+/// </summary>
 internal sealed class TemporaryDirectory : IDisposable
 {
     public string Path
@@ -8,7 +10,9 @@ internal sealed class TemporaryDirectory : IDisposable
         get;
     }
 
-    /// <summary>Создаёт отдельную папку теста.</summary>
+    /// <summary>
+    /// Создаёт отдельную папку теста.
+    /// </summary>
     public TemporaryDirectory()
     {
         Path = System.IO.Path.Combine(
@@ -18,7 +22,9 @@ internal sealed class TemporaryDirectory : IDisposable
         Directory.CreateDirectory(Path);
     }
 
-    /// <summary>Удаляет временную папку теста.</summary>
+    /// <summary>
+    /// Удаляет временную папку теста.
+    /// </summary>
     public void Dispose()
     {
         if (Directory.Exists(Path))

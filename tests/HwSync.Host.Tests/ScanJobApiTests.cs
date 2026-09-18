@@ -9,10 +9,14 @@ using Microsoft.Extensions.Logging;
 
 namespace HwSync.Host.Tests
 {
-    /// <summary>Проверки жизненного цикла заданий через API.</summary>
+    /// <summary>
+    /// Проверки жизненного цикла заданий через API.
+    /// </summary>
     public class ScanJobApiTests
     {
-        /// <summary>Проверяет завершение задания и отклонение неверных запросов.</summary>
+        /// <summary>
+        /// Проверяет завершение задания и отклонение неверных запросов.
+        /// </summary>
         [Test]
         public async Task Api_ScanCompletes_AndInvalidRequestsAreRejected()
         {

@@ -6,10 +6,14 @@ using HwSync.Infrastructure.FileSystem;
 
 namespace HwSync.Client.Tests
 {
-    /// <summary>Проверки ручных команд копирования и удаления.</summary>
+    /// <summary>
+    /// Проверки ручных команд копирования и удаления.
+    /// </summary>
     public class ManualActionsTests
     {
-        /// <summary>Проверяет подтверждение удаления и сброс использованного сравнения.</summary>
+        /// <summary>
+        /// Проверяет подтверждение удаления и сброс использованного сравнения.
+        /// </summary>
         [TestCase(false)]
         [TestCase(true)]
         public async Task DeleteClient_RequiresConfirmationAndFreshComparison(bool confirmed)
@@ -34,9 +38,12 @@ namespace HwSync.Client.Tests
             Assert.That(model.UploadCommand.CanExecute(null), Is.EqualTo(!confirmed));
         }
 
-        /// <summary>Проверяет передачу содержимого и необходимость нового сравнения.</summary>
-        [Test]
-        public async Task Upload_StreamsLocalFileAndInvalidatesComparison()
+        /// <summary>
+        /// Проверяет передачу содержимого и необходимость нового сравнения.
+        /// </summary>
+        [TestCase(true)]
+        [TestCase(false)]
+        public async Task Upload_StreamsLocalFileAndInvalidatesComparison(bool metricsEnabled)
         {
             string root = Path.Combine(TestContext.CurrentContext.WorkDirectory, "manual-client", Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(root);
@@ -44,6 +51,7 @@ namespace HwSync.Client.Tests
             ManualClient api = new();
             using MainViewModel model = new(_ => api, new DirectorySnapshotProvider())
             {
+                TransferMetricsEnabled = metricsEnabled,
                 ClientRootPath = root,
                 RootPath = Path.Combine(root, "server")
             };
@@ -51,9 +59,23 @@ namespace HwSync.Client.Tests
             await model.UploadCommand.ExecuteAsync(null);
             Assert.That(api.Uploaded, Is.EqualTo("client"));
             Assert.That(model.UploadCommand.CanExecute(null), Is.False);
+            Assert.That(model.HasTransferMetrics, Is.EqualTo(metricsEnabled));
+            if (metricsEnabled)
+            {
+                Assert.That(model.TransferMetrics!.ConfirmedBytes, Is.EqualTo(6));
+                Assert.That(model.TransferMetrics.Files.Single().Outcome, Is.EqualTo("Скопирован"));
+                Assert.That(model.MetricsSummary, Does.Contain("Клиент → сервер"));
+            }
+            else
+            {
+                Assert.That(model.TransferMetrics, Is.Null);
+                Assert.That(model.MetricsSummary, Is.Empty);
+            }
         }
 
-        /// <summary>Подставной API-клиент для ручных файловых операций.</summary>
+        /// <summary>
+        /// Подставной API-клиент для ручных файловых операций.
+        /// </summary>
         private sealed class ManualClient : IHwSyncApiClient, IFileMutationClient
         {
             public int Verifications
@@ -67,31 +89,45 @@ namespace HwSync.Client.Tests
                 private set;
             }
 
-            /// <summary>Запрашивает готовность сервера.</summary>
+            /// <summary>
+            /// Запрашивает готовность сервера.
+            /// </summary>
             public Task<HealthResponse> GetHealthAsync(CancellationToken cancellationToken = default) => Task.FromResult(new HealthResponse("ok"));
 
-            /// <summary>Отправляет снимок клиента и запускает сравнение на сервере.</summary>
+            /// <summary>
+            /// Отправляет снимок клиента и запускает сравнение на сервере.
+            /// </summary>
             public Task<ScanJobResponse> StartComparisonAsync(CompareFoldersRequest request, CancellationToken cancellationToken = default) =>
                 Task.FromResult(new ScanJobResponse(Guid.NewGuid(), ScanJobState.Completed, DateTimeOffset.UtcNow, DateTimeOffset.UtcNow,
                     request.ClientSnapshot.Select(file => new FileChangeDto(FileChangeKind.Deleted, file, null)).ToArray(), null));
 
-            /// <summary>Получает состояние и результат задания.</summary>
+            /// <summary>
+            /// Получает состояние и результат задания.
+            /// </summary>
             public Task<ScanJobResponse> GetScanAsync(Guid id, CancellationToken cancellationToken = default) => throw new NotSupportedException();
 
-            /// <summary>Запрашивает отмену задания на сервере.</summary>
+            /// <summary>
+            /// Запрашивает отмену задания на сервере.
+            /// </summary>
             public Task<ScanJobResponse> CancelScanAsync(Guid id, CancellationToken cancellationToken = default) => throw new NotSupportedException();
 
-            /// <summary>Передаёт отсутствующий на сервере файл без перезаписи.</summary>
+            /// <summary>
+            /// Передаёт отсутствующий на сервере файл без перезаписи.
+            /// </summary>
             public async Task UploadFileAsync(Guid jobId, string relativePath, Stream source, CancellationToken token)
             {
                 using StreamReader reader = new(source, leaveOpen: true);
                 Uploaded = await reader.ReadToEndAsync(token);
             }
 
-            /// <summary>Удаляет серверный файл из выбранного сравнения.</summary>
+            /// <summary>
+            /// Удаляет серверный файл из выбранного сравнения.
+            /// </summary>
             public Task DeleteServerFileAsync(Guid jobId, string relativePath, CancellationToken token) => throw new NotSupportedException();
 
-            /// <summary>Проверяет отсутствие файла на сервере перед локальным удалением.</summary>
+            /// <summary>
+            /// Проверяет отсутствие файла на сервере перед локальным удалением.
+            /// </summary>
             public Task EnsureServerFileMissingAsync(Guid jobId, string relativePath, CancellationToken token)
             {
                 Verifications++;

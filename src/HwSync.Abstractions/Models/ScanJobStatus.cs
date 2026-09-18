@@ -1,6 +1,8 @@
 namespace HwSync.Abstractions.Models
 {
-    /// <summary>Состояния задания в серверной очереди.</summary>
+    /// <summary>
+    /// Состояния задания в серверной очереди.
+    /// </summary>
     public enum ScanJobStatus
     {
         Queued,

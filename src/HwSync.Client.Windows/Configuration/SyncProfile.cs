@@ -2,7 +2,9 @@ using HwSync.Abstractions.Models;
 
 namespace HwSync.Client.Windows.Configuration
 {
-    /// <summary>Настройки пары папок и правил синхронизации.</summary>
+    /// <summary>
+    /// Настройки пары папок и правил синхронизации.
+    /// </summary>
     public sealed class SyncProfile
     {
         public string Id

@@ -3,10 +3,14 @@ using System.Text.Json;
 
 namespace HwSync.Client.Windows.Configuration
 {
-    /// <summary>Чтение и проверка общих настроек клиента.</summary>
+    /// <summary>
+    /// Чтение и проверка общих настроек клиента.
+    /// </summary>
     public static class ClientSettingsReader
     {
-        /// <summary>Читает настройки из JSON или возвращает значения по умолчанию.</summary>
+        /// <summary>
+        /// Читает настройки из JSON или возвращает значения по умолчанию.
+        /// </summary>
         public static ClientSettings Load(string filePath)
         {
             if (!File.Exists(filePath))
@@ -36,7 +40,9 @@ namespace HwSync.Client.Windows.Configuration
             return settings;
         }
 
-        /// <summary>Проверяет, что путь абсолютный или пустой.</summary>
+        /// <summary>
+        /// Проверяет, что путь абсолютный или пустой.
+        /// </summary>
         private static void ValidatePath(string? path, string name)
         {
             if (path is null || (path.Length > 0 && !Path.IsPathFullyQualified(path)))

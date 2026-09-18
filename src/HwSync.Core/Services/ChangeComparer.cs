@@ -3,10 +3,14 @@ using HwSync.Abstractions.Models;
 
 namespace HwSync.Core.Services
 {
-    /// <summary>Сравнивает снимки по пути, размеру и времени изменения.</summary>
+    /// <summary>
+    /// Сравнивает снимки по пути, размеру и времени изменения.
+    /// </summary>
     public sealed class ChangeComparer : IChangeComparer
     {
-        /// <summary>Возвращает только новые, изменённые и исчезнувшие файлы.</summary>
+        /// <summary>
+        /// Возвращает только новые, изменённые и исчезнувшие файлы.
+        /// </summary>
         public IReadOnlyCollection<FileChange> Compare(
             IReadOnlyCollection<FileSnapshot> previous,
             IReadOnlyCollection<FileSnapshot> current
@@ -45,7 +49,9 @@ namespace HwSync.Core.Services
             return changes;
         }
 
-        /// <summary>Проверяет различие размера или времени записи.</summary>
+        /// <summary>
+        /// Проверяет различие размера или времени записи.
+        /// </summary>
         private static bool IsModified(
             FileSnapshot previousFile,
             FileSnapshot currentFile

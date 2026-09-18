@@ -3,10 +3,14 @@ using HwSync.Core.Services;
 
 namespace HwSync.Core.Tests.Services
 {
-    /// <summary>Проверки обработки и отмены очереди заданий.</summary>
+    /// <summary>
+    /// Проверки обработки и отмены очереди заданий.
+    /// </summary>
     public class ScanJobServiceTests
     {
-        /// <summary>Проверяет отмену ожидающих и выполняющихся заданий.</summary>
+        /// <summary>
+        /// Проверяет отмену ожидающих и выполняющихся заданий.
+        /// </summary>
         [Test]
         public async Task Cancel_QueuedAndRunningJobs_DiscardsResults()
         {
@@ -48,7 +52,9 @@ namespace HwSync.Core.Tests.Services
             Assert.Throws<InvalidOperationException>(() => jobs.Start(request));
         }
 
-        /// <summary>Проверяет продолжение очереди после ошибки сканирования.</summary>
+        /// <summary>
+        /// Проверяет продолжение очереди после ошибки сканирования.
+        /// </summary>
         [Test]
         public async Task FailedScan_DoesNotStopNextJob()
         {

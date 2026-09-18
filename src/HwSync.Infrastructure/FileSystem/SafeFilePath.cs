@@ -1,9 +1,13 @@
 namespace HwSync.Infrastructure.FileSystem
 {
-    /// <summary>Проверка относительных путей файлов синхронизации.</summary>
+    /// <summary>
+    /// Проверка относительных путей файлов синхронизации.
+    /// </summary>
     public static class SafeFilePath
     {
-        /// <summary>Разрешает путь внутри корня, отклоняя обход каталога и ссылки.</summary>
+        /// <summary>
+        /// Разрешает путь внутри корня, отклоняя обход каталога и ссылки.
+        /// </summary>
         public static string Resolve(string rootPath, string relativePath)
         {
             string relative = relativePath.Replace('\\', '/');

@@ -5,14 +5,18 @@ using HwSync.Api.Contracts;
 using Microsoft.AspNetCore.Mvc;
 namespace HwSync.Api.Handlers
 {
-    /// <summary>Выдача файлов и истории удалений завершённого задания.</summary>
+    /// <summary>
+    /// Выдача файлов и истории удалений завершённого задания.
+    /// </summary>
     public sealed class FileTransferHandler
     {
         private readonly IScanJobService _jobs;
         private readonly ISourceFileReader _reader;
         private readonly IFolderHistory _history;
 
-        /// <summary>Принимает задания, проверяемое чтение файлов и историю папок.</summary>
+        /// <summary>
+        /// Принимает задания, проверяемое чтение файлов и историю папок.
+        /// </summary>
         public FileTransferHandler(IScanJobService jobs, ISourceFileReader reader, IFolderHistory history)
         {
             _jobs = jobs;
@@ -20,7 +24,9 @@ namespace HwSync.Api.Handlers
             _history = history;
         }
 
-        /// <summary>Возвращает поток файла из завершённого сравнения.</summary>
+        /// <summary>
+        /// Возвращает поток файла из завершённого сравнения.
+        /// </summary>
         public IActionResult Download(Guid id, string relativePath)
         {
             ScanJob? job = _jobs.Get(id);
@@ -56,7 +62,9 @@ namespace HwSync.Api.Handlers
             }
         }
 
-        /// <summary>Возвращает историю удалений папки задания.</summary>
+        /// <summary>
+        /// Возвращает историю удалений папки задания.
+        /// </summary>
         public ActionResult<IReadOnlyList<DeletedFileDto>> GetDeleted(Guid id)
         {
             ScanJob? job = _jobs.Get(id);

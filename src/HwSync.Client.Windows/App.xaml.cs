@@ -8,7 +8,9 @@ using HwSync.Client.Windows.ViewModels;
 
 namespace HwSync.Client.Windows
 {
-    /// <summary>Запуск WPF-клиента и управление временем жизни его зависимостей.</summary>
+    /// <summary>
+    /// Запуск WPF-клиента и управление временем жизни его зависимостей.
+    /// </summary>
     public partial class App : Application
     {
         private readonly HttpClient _httpClient = new()
@@ -21,7 +23,9 @@ namespace HwSync.Client.Windows
         };
         private MainViewModel? _viewModel;
 
-        /// <summary>Читает настройки и открывает главное окно.</summary>
+        /// <summary>
+        /// Читает настройки и открывает главное окно.
+        /// </summary>
         protected override void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
@@ -43,6 +47,7 @@ namespace HwSync.Client.Windows
             }
             _viewModel = new(address => new HwSyncApiClient(_httpClient, address, _transferClient, TimeSpan.FromSeconds(settings.FileTransferTimeoutSeconds)), new HwSync.Infrastructure.FileSystem.DirectorySnapshotProvider())
             {
+                TransferMetricsEnabled = settings.TransferMetricsEnabled,
                 ServerAddress = settings.ServerAddress,
                 RootPath = settings.ServerRootPath,
                 ClientRootPath = settings.ClientRootPath
@@ -53,7 +58,9 @@ namespace HwSync.Client.Windows
             window.Show();
         }
 
-        /// <summary>Отменяет текущую работу и освобождает HTTP-клиенты.</summary>
+        /// <summary>
+        /// Отменяет текущую работу и освобождает HTTP-клиенты.
+        /// </summary>
         protected override void OnExit(ExitEventArgs e)
         {
             _viewModel?.Dispose();

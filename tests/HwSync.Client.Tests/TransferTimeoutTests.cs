@@ -6,10 +6,14 @@ using HwSync.Client.Windows.Configuration;
 
 namespace HwSync.Client.Tests
 {
-    /// <summary>Проверки ожидания прогресса передачи и отмены.</summary>
+    /// <summary>
+    /// Проверки ожидания прогресса передачи и отмены.
+    /// </summary>
     public class TransferTimeoutTests
     {
-        /// <summary>Проверяет продление ожидания при поступлении блоков файла.</summary>
+        /// <summary>
+        /// Проверяет продление ожидания при поступлении блоков файла.
+        /// </summary>
         [TestCase(true)]
         [TestCase(false)]
         public async Task Progress_ExtendsTransferBeyondTimeout(bool upload)
@@ -26,7 +30,9 @@ namespace HwSync.Client.Tests
             await RunTransfer(api, upload, CancellationToken.None);
         }
 
-        /// <summary>Проверяет остановку передачи без прогресса.</summary>
+        /// <summary>
+        /// Проверяет остановку передачи без прогресса.
+        /// </summary>
         [TestCase(true)]
         [TestCase(false)]
         public void StalledTransfer_TimesOut(bool upload)
@@ -40,7 +46,9 @@ namespace HwSync.Client.Tests
             Assert.CatchAsync<OperationCanceledException>(async () => await RunTransfer(api, upload, CancellationToken.None));
         }
 
-        /// <summary>Проверяет приоритет пользовательской отмены над тайм-аутом.</summary>
+        /// <summary>
+        /// Проверяет приоритет пользовательской отмены над тайм-аутом.
+        /// </summary>
         [TestCase(true)]
         [TestCase(false)]
         public void UserCancellation_StopsTransferBeforeConfiguredTimeout(bool upload)
@@ -55,7 +63,9 @@ namespace HwSync.Client.Tests
             Assert.CatchAsync<OperationCanceledException>(async () => await RunTransfer(api, upload, cancellation.Token));
         }
 
-        /// <summary>Проверяет чтение настроенного и стандартного тайм-аутов.</summary>
+        /// <summary>
+        /// Проверяет чтение настроенного и стандартного тайм-аутов.
+        /// </summary>
         [TestCase("{}", 1800)]
         [TestCase("{\"FileTransferTimeoutSeconds\":60}", 60)]
         public void Settings_ReadTimeout(string json, int expected)
@@ -72,7 +82,9 @@ namespace HwSync.Client.Tests
             }
         }
 
-        /// <summary>Проверяет отказ при недопустимом интервале ожидания.</summary>
+        /// <summary>
+        /// Проверяет отказ при недопустимом интервале ожидания.
+        /// </summary>
         [TestCase(0)]
         [TestCase(-1)]
         [TestCase(2147484)]
@@ -90,7 +102,9 @@ namespace HwSync.Client.Tests
             }
         }
 
-        /// <summary>Выполняет тестовую передачу в выбранном направлении.</summary>
+        /// <summary>
+        /// Выполняет тестовую передачу в выбранном направлении.
+        /// </summary>
         private static async Task RunTransfer(HwSyncApiClient api, bool upload, CancellationToken token)
         {
             using PacedStream source = new();
@@ -106,10 +120,14 @@ namespace HwSync.Client.Tests
             }
         }
 
-        /// <summary>HTTP-обработчик с медленной передачей для проверки тайм-аутов.</summary>
+        /// <summary>
+        /// HTTP-обработчик с медленной передачей для проверки тайм-аутов.
+        /// </summary>
         private sealed class TransferHandler : HttpMessageHandler
         {
-            /// <summary>Имитирует приём загрузки или медленную выдачу файла.</summary>
+            /// <summary>
+            /// Имитирует приём загрузки или медленную выдачу файла.
+            /// </summary>
             protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken token)
             {
                 if (request.Content is not null)
@@ -124,23 +142,31 @@ namespace HwSync.Client.Tests
             }
         }
 
-        /// <summary>Тестовый поток, выдающий данные небольшими блоками с задержкой.</summary>
+        /// <summary>
+        /// Тестовый поток, выдающий данные небольшими блоками с задержкой.
+        /// </summary>
         private sealed class PacedStream : MemoryStream
         {
-            /// <summary>Создаёт небольшое содержимое для проверки длительной передачи.</summary>
+            /// <summary>
+            /// Создаёт небольшое содержимое для проверки длительной передачи.
+            /// </summary>
             public PacedStream() : base(new byte[8])
             {
 
             }
 
-            /// <summary>Выдаёт один байт после задержки с поддержкой отмены.</summary>
+            /// <summary>
+            /// Выдаёт один байт после задержки с поддержкой отмены.
+            /// </summary>
             public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
             {
                 await Task.Delay(150, cancellationToken);
                 return await base.ReadAsync(buffer[..Math.Min(buffer.Length, 1)], cancellationToken);
             }
 
-            /// <summary>Копирует тестовые данные блоками с управляемой задержкой.</summary>
+            /// <summary>
+            /// Копирует тестовые данные блоками с управляемой задержкой.
+            /// </summary>
             public override async Task CopyToAsync(Stream destination, int bufferSize, CancellationToken token)
             {
                 byte[] buffer = new byte[1];

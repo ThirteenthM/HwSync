@@ -3,10 +3,14 @@ using HwSync.Abstractions.Services;
 
 namespace HwSync.Core.Services
 {
-    /// <summary>Преобразование различий в односторонний план.</summary>
+    /// <summary>
+    /// Преобразование различий в односторонний план.
+    /// </summary>
     public sealed class SyncPlanner : ISyncPlanner
     {
-        /// <summary>Назначает действия согласно выбранному режиму синхронизации.</summary>
+        /// <summary>
+        /// Назначает действия согласно выбранному режиму синхронизации.
+        /// </summary>
         public SyncPlan Create(IReadOnlyCollection<FileChange> changes, SyncMode mode)
         {
             ArgumentNullException.ThrowIfNull(changes);

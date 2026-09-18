@@ -1,6 +1,8 @@
 namespace HwSync.Abstractions.Models
 {
-    /// <summary>Правила разрешения конфликтов двусторонней синхронизации.</summary>
+    /// <summary>
+    /// Правила разрешения конфликтов двусторонней синхронизации.
+    /// </summary>
     public sealed record ReconciliationRules
     {
         public ContentConflictPolicy ContentConflict

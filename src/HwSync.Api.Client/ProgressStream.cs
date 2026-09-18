@@ -1,12 +1,16 @@
 namespace HwSync.Api.Client
 {
-    /// <summary>Поток, сообщающий о прогрессе без владения исходным потоком.</summary>
+    /// <summary>
+    /// Поток, сообщающий о прогрессе без владения исходным потоком.
+    /// </summary>
     internal sealed class ProgressStream : Stream
     {
         private readonly Stream _inner;
         private readonly Action _progress;
 
-        /// <summary>Связывает поток с уведомлением об обработанном блоке.</summary>
+        /// <summary>
+        /// Связывает поток с уведомлением об обработанном блоке.
+        /// </summary>
         public ProgressStream(Stream inner, Action progress)
         {
             _inner = inner;
@@ -22,19 +26,29 @@ namespace HwSync.Api.Client
             set => _inner.Position = value;
         }
 
-        /// <summary>Сбрасывает буфер исходного потока.</summary>
+        /// <summary>
+        /// Сбрасывает буфер исходного потока.
+        /// </summary>
         public override void Flush() => _inner.Flush();
 
-        /// <summary>Асинхронно сбрасывает буфер исходного потока.</summary>
+        /// <summary>
+        /// Асинхронно сбрасывает буфер исходного потока.
+        /// </summary>
         public override Task FlushAsync(CancellationToken token) => _inner.FlushAsync(token);
 
-        /// <summary>Перемещает позицию в исходном потоке.</summary>
+        /// <summary>
+        /// Перемещает позицию в исходном потоке.
+        /// </summary>
         public override long Seek(long offset, SeekOrigin origin) => _inner.Seek(offset, origin);
 
-        /// <summary>Меняет длину исходного потока.</summary>
+        /// <summary>
+        /// Меняет длину исходного потока.
+        /// </summary>
         public override void SetLength(long value) => _inner.SetLength(value);
 
-        /// <summary>Читает блок и сообщает о прогрессе.</summary>
+        /// <summary>
+        /// Читает блок и сообщает о прогрессе.
+        /// </summary>
         public override int Read(byte[] buffer, int offset, int count)
         {
             int read = _inner.Read(buffer, offset, count);
@@ -45,7 +59,9 @@ namespace HwSync.Api.Client
             return read;
         }
 
-        /// <summary>Асинхронно читает блок и сообщает о прогрессе.</summary>
+        /// <summary>
+        /// Асинхронно читает блок и сообщает о прогрессе.
+        /// </summary>
         public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
             int read = await _inner.ReadAsync(buffer, cancellationToken).ConfigureAwait(false);
@@ -56,11 +72,15 @@ namespace HwSync.Api.Client
             return read;
         }
 
-        /// <summary>Асинхронно читает блок и сообщает о прогрессе.</summary>
+        /// <summary>
+        /// Асинхронно читает блок и сообщает о прогрессе.
+        /// </summary>
         public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
             ReadAsync(buffer.AsMemory(offset, count), cancellationToken).AsTask();
 
-        /// <summary>Записывает блок и сообщает о прогрессе.</summary>
+        /// <summary>
+        /// Записывает блок и сообщает о прогрессе.
+        /// </summary>
         public override void Write(byte[] buffer, int offset, int count)
         {
             _inner.Write(buffer, offset, count);
@@ -70,7 +90,9 @@ namespace HwSync.Api.Client
             }
         }
 
-        /// <summary>Асинхронно записывает блок и сообщает о прогрессе.</summary>
+        /// <summary>
+        /// Асинхронно записывает блок и сообщает о прогрессе.
+        /// </summary>
         public override async ValueTask WriteAsync(ReadOnlyMemory<byte> buffer, CancellationToken cancellationToken = default)
         {
             await _inner.WriteAsync(buffer, cancellationToken).ConfigureAwait(false);
@@ -80,7 +102,9 @@ namespace HwSync.Api.Client
             }
         }
 
-        /// <summary>Асинхронно записывает блок и сообщает о прогрессе.</summary>
+        /// <summary>
+        /// Асинхронно записывает блок и сообщает о прогрессе.
+        /// </summary>
         public override Task WriteAsync(byte[] buffer, int offset, int count, CancellationToken cancellationToken) =>
             WriteAsync(buffer.AsMemory(offset, count), cancellationToken).AsTask();
     }

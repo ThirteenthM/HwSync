@@ -2,10 +2,14 @@ using HwSync.Abstractions.FileSystem;
 using HwSync.Abstractions.Models;
 namespace HwSync.Infrastructure.FileSystem
 {
-    /// <summary>Чтение исходного файла с проверкой атрибутов сравнения.</summary>
+    /// <summary>
+    /// Чтение исходного файла с проверкой атрибутов сравнения.
+    /// </summary>
     public sealed class SourceFileReader : ISourceFileReader
     {
-        /// <summary>Открывает файл для чтения, проверяя путь, размер и время изменения.</summary>
+        /// <summary>
+        /// Открывает файл для чтения, проверяя путь, размер и время изменения.
+        /// </summary>
         public Stream OpenRead(string rootPath, FileSnapshot expected)
         {
             string path = SafeFilePath.Resolve(rootPath, expected.RelativePath);

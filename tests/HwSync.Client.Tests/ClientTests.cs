@@ -7,10 +7,14 @@ using HwSync.Client.Windows.ViewModels;
 
 namespace HwSync.Client.Tests
 {
-    /// <summary>Проверки HTTP-клиента и управления заданиями из формы.</summary>
+    /// <summary>
+    /// Проверки HTTP-клиента и управления заданиями из формы.
+    /// </summary>
     public class ClientTests
     {
-        /// <summary>Проверяет сохранение статуса и описания HTTP-ошибки.</summary>
+        /// <summary>
+        /// Проверяет сохранение статуса и описания HTTP-ошибки.
+        /// </summary>
         [TestCase(400)]
         [TestCase(403)]
         [TestCase(404)]
@@ -28,7 +32,9 @@ namespace HwSync.Client.Tests
             Assert.That(error.Message, Does.Contain("server detail"));
         }
 
-        /// <summary>Проверяет обработку ответа, не соответствующего контракту.</summary>
+        /// <summary>
+        /// Проверяет обработку ответа, не соответствующего контракту.
+        /// </summary>
         [Test]
         public void InvalidJson_IsReportedAsContractError()
         {
@@ -40,7 +46,9 @@ namespace HwSync.Client.Tests
             Assert.ThrowsAsync<System.IO.InvalidDataException>(() => client.GetHealthAsync());
         }
 
-        /// <summary>Проверяет метод запроса отмены и сохранение базового пути API.</summary>
+        /// <summary>
+        /// Проверяет метод запроса отмены и сохранение базового пути API.
+        /// </summary>
         [Test]
         public async Task Cancel_UsesPostAndKeepsBasePath()
         {
@@ -59,7 +67,9 @@ namespace HwSync.Client.Tests
             Assert.That(job.Status, Is.EqualTo(ScanJobState.Cancelled));
         }
 
-        /// <summary>Проверяет продолжение опроса без создания второго задания.</summary>
+        /// <summary>
+        /// Проверяет продолжение опроса без создания второго задания.
+        /// </summary>
         [Test]
         public async Task PollFailure_CanResumeWithoutStartingDuplicateJob()
         {
@@ -80,7 +90,9 @@ namespace HwSync.Client.Tests
             Assert.That(client.Starts, Is.EqualTo(1));
         }
 
-        /// <summary>Проверяет отправку отмены из модели формы.</summary>
+        /// <summary>
+        /// Проверяет отправку отмены из модели формы.
+        /// </summary>
         [Test]
         public async Task Cancel_SendsRequestToServer()
         {
@@ -97,7 +109,9 @@ namespace HwSync.Client.Tests
             Assert.That(model.Status, Is.EqualTo("Задание отменено"));
         }
 
-        /// <summary>Проверяет отказ до обращения к серверу при отсутствии локальной папки.</summary>
+        /// <summary>
+        /// Проверяет отказ до обращения к серверу при отсутствии локальной папки.
+        /// </summary>
         [Test]
         public async Task MissingLocalFolder_DoesNotSendServerRequest()
         {
@@ -113,18 +127,24 @@ namespace HwSync.Client.Tests
             Assert.That(model.HasActiveJob, Is.False);
         }
 
-        /// <summary>Подставной HTTP-обработчик для заданного ответа.</summary>
+        /// <summary>
+        /// Подставной HTTP-обработчик для заданного ответа.
+        /// </summary>
         private sealed class ResponseHandler : HttpMessageHandler
         {
             private readonly Func<HttpRequestMessage, HttpResponseMessage> _respond;
 
-            /// <summary>Сохраняет фабрику тестовых HTTP-ответов.</summary>
+            /// <summary>
+            /// Сохраняет фабрику тестовых HTTP-ответов.
+            /// </summary>
             public ResponseHandler(Func<HttpRequestMessage, HttpResponseMessage> respond)
             {
                 _respond = respond;
             }
 
-            /// <summary>Возвращает подготовленный тестом HTTP-ответ.</summary>
+            /// <summary>
+            /// Возвращает подготовленный тестом HTTP-ответ.
+            /// </summary>
             protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
             {
                 cancellationToken.ThrowIfCancellationRequested();
@@ -132,7 +152,9 @@ namespace HwSync.Client.Tests
             }
         }
 
-        /// <summary>Подставной API-клиент для проверки состояния формы.</summary>
+        /// <summary>
+        /// Подставной API-клиент для проверки состояния формы.
+        /// </summary>
         private sealed class StubClient : IHwSyncApiClient
         {
             private readonly Guid _id = Guid.NewGuid();
@@ -152,10 +174,14 @@ namespace HwSync.Client.Tests
                 private set;
             }
 
-            /// <summary>Запрашивает готовность сервера.</summary>
+            /// <summary>
+            /// Запрашивает готовность сервера.
+            /// </summary>
             public Task<HealthResponse> GetHealthAsync(CancellationToken cancellationToken = default) => Task.FromResult(new HealthResponse("ok"));
 
-            /// <summary>Отправляет снимок клиента и запускает сравнение на сервере.</summary>
+            /// <summary>
+            /// Отправляет снимок клиента и запускает сравнение на сервере.
+            /// </summary>
             public Task<ScanJobResponse> StartComparisonAsync(CompareFoldersRequest request, CancellationToken cancellationToken = default)
             {
                 Starts++;
@@ -163,7 +189,9 @@ namespace HwSync.Client.Tests
                 return Task.FromResult(Job(ScanJobState.Queued));
             }
 
-            /// <summary>Получает состояние и результат задания.</summary>
+            /// <summary>
+            /// Получает состояние и результат задания.
+            /// </summary>
             public Task<ScanJobResponse> GetScanAsync(Guid id, CancellationToken cancellationToken = default)
             {
                 if (FailPoll)
@@ -176,14 +204,18 @@ namespace HwSync.Client.Tests
                 });
             }
 
-            /// <summary>Запрашивает отмену задания на сервере.</summary>
+            /// <summary>
+            /// Запрашивает отмену задания на сервере.
+            /// </summary>
             public Task<ScanJobResponse> CancelScanAsync(Guid id, CancellationToken cancellationToken = default)
             {
                 Cancels++;
                 return Task.FromResult(Job(ScanJobState.Cancelled));
             }
 
-            /// <summary>Создаёт ответ с заданным состоянием тестового задания.</summary>
+            /// <summary>
+            /// Создаёт ответ с заданным состоянием тестового задания.
+            /// </summary>
             private ScanJobResponse Job(ScanJobState state) => new(_id, state, DateTimeOffset.UtcNow, null, null, null);
         }
     }

@@ -1,6 +1,8 @@
 namespace HwSync.Abstractions.Models
 {
-    /// <summary>Действие одностороннего плана.</summary>
+    /// <summary>
+    /// Действие одностороннего плана.
+    /// </summary>
     public enum SyncAction
     {
         CopyToClient,

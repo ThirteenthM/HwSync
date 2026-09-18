@@ -6,19 +6,25 @@ using HwSync.Abstractions.Models;
 
 namespace HwSync.Infrastructure.FileSystem
 {
-    /// <summary>Сохранение снимков и истории удалений в JSON.</summary>
+    /// <summary>
+    /// Сохранение снимков и истории удалений в JSON.
+    /// </summary>
     public sealed class JsonFolderHistory : IFolderHistory
     {
         private readonly string _directory;
         private readonly object _gate = new();
 
-        /// <summary>Задаёт каталог хранения метаданных папок.</summary>
+        /// <summary>
+        /// Задаёт каталог хранения метаданных папок.
+        /// </summary>
         public JsonFolderHistory(string directory)
         {
             _directory = Path.GetFullPath(directory);
         }
 
-        /// <summary>Сохраняет снимок и отмечает исчезнувшие файлы.</summary>
+        /// <summary>
+        /// Сохраняет снимок и отмечает исчезнувшие файлы.
+        /// </summary>
         public void RecordSnapshot(string rootPath, IReadOnlyCollection<FileSnapshot> snapshot)
         {
             lock (_gate)
@@ -62,7 +68,9 @@ namespace HwSync.Infrastructure.FileSystem
             }
         }
 
-        /// <summary>Возвращает сохранённые отметки удаления.</summary>
+        /// <summary>
+        /// Возвращает сохранённые отметки удаления.
+        /// </summary>
         public IReadOnlyList<DeletedFile> GetDeletedFiles(string rootPath)
         {
             lock (_gate)
@@ -71,7 +79,9 @@ namespace HwSync.Infrastructure.FileSystem
             }
         }
 
-        /// <summary>Определяет файл истории и запрещает хранение внутри исходной папки.</summary>
+        /// <summary>
+        /// Определяет файл истории и запрещает хранение внутри исходной папки.
+        /// </summary>
         private string GetStatePath(string rootPath)
         {
             string root = Path.TrimEndingDirectorySeparator(Path.GetFullPath(rootPath));
@@ -84,12 +94,16 @@ namespace HwSync.Infrastructure.FileSystem
             return Path.Combine(_directory, key + ".json");
         }
 
-        /// <summary>Читает историю папки либо создаёт пустое исходное состояние.</summary>
+        /// <summary>
+        /// Читает историю папки либо создаёт пустое исходное состояние.
+        /// </summary>
         private static FolderState Read(string path) => File.Exists(path)
             ? JsonSerializer.Deserialize<FolderState>(File.ReadAllText(path)) ?? throw new InvalidDataException("Некорректная история папки.")
             : new(0, [], []);
 
-        /// <summary>Сохранённый снимок папки, счётчик и история удалений.</summary>
+        /// <summary>
+        /// Сохранённый снимок папки, счётчик и история удалений.
+        /// </summary>
         public sealed record FolderState(long ChangeNumber, FileSnapshot[] Files, DeletedFile[] DeletedFiles);
     }
 }

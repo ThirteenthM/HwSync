@@ -4,12 +4,16 @@ using HwSync.Client.Windows.ViewModels;
 
 namespace HwSync.Client.Windows
 {
-    /// <summary>Окно сравнения папок и ручной синхронизации.</summary>
+    /// <summary>
+    /// Окно сравнения папок и ручной синхронизации.
+    /// </summary>
     public partial class MainWindow : Window
     {
         private readonly MainViewModel _viewModel;
 
-        /// <summary>Связывает окно с моделью и подтверждением удаления.</summary>
+        /// <summary>
+        /// Связывает окно с моделью и подтверждением удаления.
+        /// </summary>
         public MainWindow(MainViewModel viewModel)
         {
             InitializeComponent();
@@ -18,7 +22,9 @@ namespace HwSync.Client.Windows
             viewModel.ConfirmDeletion = ConfirmDeletion;
         }
 
-        /// <summary>Показывает список удаляемых файлов и ожидает решение пользователя.</summary>
+        /// <summary>
+        /// Показывает список удаляемых файлов и ожидает решение пользователя.
+        /// </summary>
         private bool ConfirmDeletion(string side, IReadOnlyList<string> paths)
         {
             Window dialog = new()
@@ -73,7 +79,9 @@ namespace HwSync.Client.Windows
             return dialog.ShowDialog() == true;
         }
 
-        /// <summary>Предупреждает о продолжающемся серверном задании.</summary>
+        /// <summary>
+        /// Предупреждает о продолжающемся серверном задании.
+        /// </summary>
         protected override void OnClosing(CancelEventArgs e)
         {
             if (_viewModel.HasActiveJob && MessageBox.Show(this,
@@ -85,7 +93,9 @@ namespace HwSync.Client.Windows
             base.OnClosing(e);
         }
 
-        /// <summary>Обрабатывает нажатие без дополнительных действий.</summary>
+        /// <summary>
+        /// Обрабатывает нажатие без дополнительных действий.
+        /// </summary>
         private void Button_Click(object sender, RoutedEventArgs e)
         {
 

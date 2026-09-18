@@ -4,10 +4,14 @@ using Microsoft.Extensions.Hosting;
 
 namespace HwSync.Host
 {
-    /// <summary>Точка входа серверного приложения.</summary>
+    /// <summary>
+    /// Точка входа серверного приложения.
+    /// </summary>
     internal static class Program
     {
-        /// <summary>Разбирает аргументы и запускает сервер.</summary>
+        /// <summary>
+        /// Разбирает аргументы и запускает сервер.
+        /// </summary>
         private static async Task<int> Main(string[] args)
         {
             RootCommand command = HostCommandLine.CreateCommand(async (consoleMode, settings, cancellationToken) =>

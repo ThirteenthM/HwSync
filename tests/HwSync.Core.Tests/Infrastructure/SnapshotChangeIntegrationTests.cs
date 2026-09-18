@@ -6,11 +6,15 @@ using HwSync.Infrastructure.FileSystem;
 
 namespace HwSync.Core.Tests.Infrastructure;
 
-/// <summary>Проверки сравнения снимков реальных папок.</summary>
+/// <summary>
+/// Проверки сравнения снимков реальных папок.
+/// </summary>
 [TestFixture]
 public class SnapshotChangeIntegrationTests
 {
-    /// <summary>Проверяет обнаружение изменения реального файла.</summary>
+    /// <summary>
+    /// Проверяет обнаружение изменения реального файла.
+    /// </summary>
     [Test]
     public void Compare_WhenFileChangedBetweenSnapshots_ReturnsModifiedChange()
     {
@@ -48,7 +52,9 @@ public class SnapshotChangeIntegrationTests
             Is.EqualTo(FileChangeType.Modified));
     }
 
-    /// <summary>Проверяет обнаружение нового файла между снимками.</summary>
+    /// <summary>
+    /// Проверяет обнаружение нового файла между снимками.
+    /// </summary>
     [Test]
     public void Compare_WhenFileCreatedBetweenSnapshots_ReturnsCreatedChange()
     {
@@ -93,7 +99,9 @@ public class SnapshotChangeIntegrationTests
         });
     }
 
-    /// <summary>Проверяет обнаружение удаления между снимками.</summary>
+    /// <summary>
+    /// Проверяет обнаружение удаления между снимками.
+    /// </summary>
     [Test]
     public void Compare_WhenFileDeletedBetweenSnapshots_ReturnsDeletedChange()
     {

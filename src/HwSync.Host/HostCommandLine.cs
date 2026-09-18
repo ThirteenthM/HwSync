@@ -2,10 +2,14 @@ using System.CommandLine;
 
 namespace HwSync.Host
 {
-    /// <summary>Разбор режима запуска и параметров конфигурации Host.</summary>
+    /// <summary>
+    /// Разбор режима запуска и параметров конфигурации Host.
+    /// </summary>
     public static class HostCommandLine
     {
-        /// <summary>Создаёт команду запуска с проверкой аргументов.</summary>
+        /// <summary>
+        /// Создаёт команду запуска с проверкой аргументов.
+        /// </summary>
         public static RootCommand CreateCommand(Func<bool, string[], CancellationToken, Task> runHost)
         {
             Option<bool> consoleOption = new("--console")

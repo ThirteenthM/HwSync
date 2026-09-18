@@ -4,10 +4,14 @@ using HwSync.Core.Services;
 
 namespace HwSync.Core.Tests.Services
 {
-    /// <summary>Проверки одностороннего плана синхронизации.</summary>
+    /// <summary>
+    /// Проверки одностороннего плана синхронизации.
+    /// </summary>
     public class SyncPlannerTests
     {
-        /// <summary>Проверяет действия выбранного режима синхронизации.</summary>
+        /// <summary>
+        /// Проверяет действия выбранного режима синхронизации.
+        /// </summary>
         [TestCase(SyncMode.Update, SyncAction.KeepOnClient)]
         [TestCase(SyncMode.Mirror, SyncAction.DeleteFromClient)]
         public void Create_MapsDifferencesToDirectionalActions(SyncMode mode, SyncAction clientOnlyAction)
@@ -32,7 +36,9 @@ namespace HwSync.Core.Tests.Services
             Assert.That(plan.Items[1].ServerFile, Is.EqualTo(updated));
         }
 
-        /// <summary>Проверяет запрет путей за пределами корня.</summary>
+        /// <summary>
+        /// Проверяет запрет путей за пределами корня.
+        /// </summary>
         [TestCase("../outside.txt")]
         [TestCase("C:/outside.txt")]
         [TestCase("/outside.txt")]

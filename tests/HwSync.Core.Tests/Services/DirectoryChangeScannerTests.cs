@@ -4,10 +4,14 @@ using HwSync.Core.Services;
 
 namespace HwSync.Core.Tests.Services
 {
-    /// <summary>Проверки взаимодействия сканера с поставщиком снимков.</summary>
+    /// <summary>
+    /// Проверки взаимодействия сканера с поставщиком снимков.
+    /// </summary>
     public partial class DirectoryChangeScannerTests
     {
-        /// <summary>Проверяет сравнение снимка именно запрошенной папки.</summary>
+        /// <summary>
+        /// Проверяет сравнение снимка именно запрошенной папки.
+        /// </summary>
         [Test]
         public void Scan_WhenSnapshotsDiffer_ReturnsChangesForRequestedDirectory()
         {
@@ -41,7 +45,9 @@ namespace HwSync.Core.Tests.Services
             });
         }
 
-        /// <summary>Проверяет чтение свежего снимка при повторном запросе.</summary>
+        /// <summary>
+        /// Проверяет чтение свежего снимка при повторном запросе.
+        /// </summary>
         [Test]
         public void Scan_WhenCalledAgain_UsesNewRequestAndFreshSnapshot()
         {

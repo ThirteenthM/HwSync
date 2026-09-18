@@ -2,10 +2,14 @@ using HwSync.Abstractions.FileSystem;
 using HwSync.Abstractions.Models;
 namespace HwSync.Infrastructure.FileSystem
 {
-    /// <summary>Копирование и удаление с проверкой состояния файлов.</summary>
+    /// <summary>
+    /// Копирование и удаление с проверкой состояния файлов.
+    /// </summary>
     public sealed class ComparedFileOperations : IComparedFileOperations
     {
-        /// <summary>Проверяет отсутствие пути и доступность корневой папки.</summary>
+        /// <summary>
+        /// Проверяет отсутствие пути и доступность корневой папки.
+        /// </summary>
         public void EnsureMissing(string root, string relativePath)
         {
             if ((File.GetAttributes(root) & FileAttributes.Directory) == 0)
@@ -28,7 +32,9 @@ namespace HwSync.Infrastructure.FileSystem
             throw new IOException("Путь уже существует. Повторите сравнение.");
         }
 
-        /// <summary>Копирует отсутствующий файл без перезаписи существующего.</summary>
+        /// <summary>
+        /// Копирует отсутствующий файл без перезаписи существующего.
+        /// </summary>
         public async Task CopyMissingAsync(string root, FileSnapshot file, Stream content, CancellationToken token)
         {
             MissingFileSynchronizer copier = new();
@@ -58,7 +64,9 @@ namespace HwSync.Infrastructure.FileSystem
             }
         }
 
-        /// <summary>Удаляет файл только при совпадении размера и времени со снимком.</summary>
+        /// <summary>
+        /// Удаляет файл только при совпадении размера и времени со снимком.
+        /// </summary>
         public void DeleteUnchanged(string root, FileSnapshot file)
         {
             string path = SafeFilePath.Resolve(root, file.RelativePath);

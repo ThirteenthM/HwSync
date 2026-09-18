@@ -4,6 +4,7 @@
         Title="HwSync — сравнение папок" Width="1060" Height="840" MinWidth="820" MinHeight="740"
         WindowStartupLocation="CenterScreen" Background="#F3F5F8" FontFamily="Segoe UI" FontSize="14">
     <Window.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVisibility"/>
         <Style TargetType="Button">
             <Setter Property="Padding" Value="16,9" />
             <Setter Property="Margin" Value="0,0,10,0" />
@@ -60,6 +61,23 @@
             </UniformGrid>
             <TextBlock Text="{Binding Status}" FontSize="17" FontWeight="SemiBold" TextWrapping="Wrap"/>
             <TextBox Text="{Binding JobId, Mode=OneWay}" IsReadOnly="True" BorderThickness="0" Background="Transparent" Padding="0,4" Foreground="#58697B" AutomationProperties.Name="Идентификатор задания"/>
+            <Expander Header="Метрики последнего копирования" Margin="0,6,0,0"
+                      Visibility="{Binding HasTransferMetrics, Converter={StaticResource BoolToVisibility}}">
+                <StackPanel>
+                    <TextBlock Text="{Binding MetricsSummary}" TextWrapping="Wrap" Margin="0,4,0,6"/>
+                    <DataGrid ItemsSource="{Binding TransferMetrics.Files}" MaxHeight="140"
+                              AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False"
+                              HeadersVisibility="Column" EnableRowVirtualization="True">
+                        <DataGrid.Columns>
+                            <DataGridTextColumn Header="Файл" Binding="{Binding RelativePath}" Width="*"/>
+                            <DataGridTextColumn Header="Объём" Binding="{Binding Volume}" Width="90"/>
+                            <DataGridTextColumn Header="Время" Binding="{Binding Elapsed}" Width="90"/>
+                            <DataGridTextColumn Header="Скорость" Binding="{Binding Speed}" Width="110"/>
+                            <DataGridTextColumn Header="Результат" Binding="{Binding Outcome}" Width="150"/>
+                        </DataGrid.Columns>
+                    </DataGrid>
+                </StackPanel>
+            </Expander>
             <TextBlock Text="{Binding Error}" Foreground="#A22222" TextWrapping="Wrap" MaxHeight="80"/>
         </StackPanel>
         <Border Grid.Row="3" Background="White" CornerRadius="8" Padding="12">

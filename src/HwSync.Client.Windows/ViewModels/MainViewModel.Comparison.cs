@@ -12,10 +12,14 @@ using HwSync.Api.Contracts;
 
 namespace HwSync.Client.Windows.ViewModels
 {
-    /// <summary>Состояние формы и управление командами сравнения и синхронизации.</summary>
+    /// <summary>
+    /// Состояние формы и управление командами сравнения и синхронизации.
+    /// </summary>
     public sealed partial class MainViewModel : ObservableObject, IDisposable
     {
-        /// <summary>Создаёт API-клиент для адреса из формы.</summary>
+        /// <summary>
+        /// Создаёт API-клиент для адреса из формы.
+        /// </summary>
         private IHwSyncApiClient CreateClient()
         {
             if (!Uri.TryCreate(ServerAddress.Trim(), UriKind.Absolute, out Uri? address))
@@ -26,7 +30,9 @@ namespace HwSync.Client.Windows.ViewModels
             return _createClient(address);
         }
 
-        /// <summary>Проверяет готовность сервера и обновляет состояние формы.</summary>
+        /// <summary>
+        /// Проверяет готовность сервера и обновляет состояние формы.
+        /// </summary>
         private async Task ConnectAsync()
         {
             await ExecuteAsync(async () =>
@@ -42,7 +48,9 @@ namespace HwSync.Client.Windows.ViewModels
             });
         }
 
-        /// <summary>Снимает состояние клиента и запускает сравнение на сервере.</summary>
+        /// <summary>
+        /// Снимает состояние клиента и запускает сравнение на сервере.
+        /// </summary>
         private async Task StartAsync()
         {
             await ExecuteAsync(async () =>
@@ -88,10 +96,14 @@ namespace HwSync.Client.Windows.ViewModels
             });
         }
 
-        /// <summary>Возобновляет опрос существующего задания.</summary>
+        /// <summary>
+        /// Возобновляет опрос существующего задания.
+        /// </summary>
         private Task ResumeAsync() => ExecuteAsync(PollAsync);
 
-        /// <summary>Опрашивает сервер до завершения активного задания.</summary>
+        /// <summary>
+        /// Опрашивает сервер до завершения активного задания.
+        /// </summary>
         private async Task PollAsync()
         {
             while (_activeJob is Guid id && _jobClient is not null)
@@ -109,7 +121,9 @@ namespace HwSync.Client.Windows.ViewModels
             }
         }
 
-        /// <summary>Отображает состояние задания и сохраняет завершённое сравнение.</summary>
+        /// <summary>
+        /// Отображает состояние задания и сохраняет завершённое сравнение.
+        /// </summary>
         private void ApplyJob(ScanJobResponse job)
         {
             // Ответ опроса, отправленного до отмены, не должен вернуть интерфейс в Running.

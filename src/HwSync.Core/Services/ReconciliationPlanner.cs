@@ -3,10 +3,14 @@ using HwSync.Abstractions.Services;
 
 namespace HwSync.Core.Services
 {
-    /// <summary>Строит план по полным снимкам, не изменяя файлы и подтверждённые версии.</summary>
+    /// <summary>
+    /// Строит план по полным снимкам, не изменяя файлы и подтверждённые версии.
+    /// </summary>
     public sealed class ReconciliationPlanner : IReconciliationPlanner
     {
-        /// <summary>Строит решения по общему состоянию, снимкам сторон и правилам конфликтов.</summary>
+        /// <summary>
+        /// Строит решения по общему состоянию, снимкам сторон и правилам конфликтов.
+        /// </summary>
         public ReconciliationPlan Create(FolderSyncState baseline, IReadOnlyCollection<FileVersion> server,
             IReadOnlyCollection<FileVersion> client, ReconciliationRules rules)
         {
@@ -40,7 +44,9 @@ namespace HwSync.Core.Services
             return new(items.AsReadOnly());
         }
 
-        /// <summary>Выбирает действие по изменениям относительно общего состояния.</summary>
+        /// <summary>
+        /// Выбирает действие по изменениям относительно общего состояния.
+        /// </summary>
         private static ReconciliationAction Decide(FileVersion? before, FileVersion? server, FileVersion? client)
         {
             string? remoteHash = server?.ContentHash;
@@ -82,11 +88,15 @@ namespace HwSync.Core.Services
             return localHash is null ? ReconciliationAction.DeleteOnServer : ReconciliationAction.Upload;
         }
 
-        /// <summary>Сравнивает хеши содержимого без учёта регистра.</summary>
+        /// <summary>
+        /// Сравнивает хеши содержимого без учёта регистра.
+        /// </summary>
         private static bool Same(string? first, string? second) =>
             StringComparer.OrdinalIgnoreCase.Equals(first, second);
 
-        /// <summary>Проверяет версии и индексирует их по нормализованным путям.</summary>
+        /// <summary>
+        /// Проверяет версии и индексирует их по нормализованным путям.
+        /// </summary>
         private static Dictionary<string, FileVersion> Index(IReadOnlyCollection<FileVersion> files)
         {
             ArgumentNullException.ThrowIfNull(files);

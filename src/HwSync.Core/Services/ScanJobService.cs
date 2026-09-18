@@ -4,7 +4,9 @@ using HwSync.Abstractions.Services;
 
 namespace HwSync.Core.Services
 {
-    /// <summary>Ограниченная очередь заданий с хранением результатов в памяти.</summary>
+    /// <summary>
+    /// Ограниченная очередь заданий с хранением результатов в памяти.
+    /// </summary>
     public sealed class ScanJobService : IScanJobService
     {
         private const int Capacity = 100;
@@ -14,7 +16,9 @@ namespace HwSync.Core.Services
             Channel.CreateBounded<(Guid, ChangeScanRequest)>(Capacity);
         private bool _stopping;
 
-        /// <summary>Ставит сравнение папки в очередь.</summary>
+        /// <summary>
+        /// Ставит сравнение папки в очередь.
+        /// </summary>
         public ScanJob Start(ChangeScanRequest request)
         {
             ArgumentNullException.ThrowIfNull(request);
@@ -55,7 +59,9 @@ namespace HwSync.Core.Services
             }
         }
 
-        /// <summary>Возвращает состояние задания по идентификатору.</summary>
+        /// <summary>
+        /// Возвращает состояние задания по идентификатору.
+        /// </summary>
         public ScanJob? Get(Guid id)
         {
             lock (_gate)
@@ -64,7 +70,9 @@ namespace HwSync.Core.Services
             }
         }
 
-        /// <summary>Запрашивает отмену задания по идентификатору.</summary>
+        /// <summary>
+        /// Запрашивает отмену задания по идентификатору.
+        /// </summary>
         public ScanJob? Cancel(Guid id)
         {
             lock (_gate)
@@ -93,7 +101,9 @@ namespace HwSync.Core.Services
             }
         }
 
-        /// <summary>Последовательно обрабатывает очередь до отмены работы.</summary>
+        /// <summary>
+        /// Последовательно обрабатывает очередь до отмены работы.
+        /// </summary>
         public async Task RunAsync(Func<ChangeScanRequest, IReadOnlyCollection<FileChange>> scan, CancellationToken stoppingToken)
         {
             using CancellationTokenRegistration registration = stoppingToken.Register(Stop);
@@ -152,7 +162,9 @@ namespace HwSync.Core.Services
             }
         }
 
-        /// <summary>Отмечает оставшиеся задания отменёнными при остановке службы.</summary>
+        /// <summary>
+        /// Отмечает оставшиеся задания отменёнными при остановке службы.
+        /// </summary>
         private void Stop()
         {
             lock (_gate)

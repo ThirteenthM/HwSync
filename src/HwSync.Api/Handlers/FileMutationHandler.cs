@@ -4,20 +4,26 @@ using HwSync.Abstractions.Services;
 using Microsoft.AspNetCore.Mvc;
 namespace HwSync.Api.Handlers
 {
-    /// <summary>Проверка и выполнение файловых изменений через API.</summary>
+    /// <summary>
+    /// Проверка и выполнение файловых изменений через API.
+    /// </summary>
     public sealed class FileMutationHandler
     {
         private readonly IScanJobService _jobs;
         private readonly IComparedFileOperations _files;
 
-        /// <summary>Принимает хранилище заданий и файловые операции.</summary>
+        /// <summary>
+        /// Принимает хранилище заданий и файловые операции.
+        /// </summary>
         public FileMutationHandler(IScanJobService jobs, IComparedFileOperations files)
         {
             _jobs = jobs;
             _files = files;
         }
 
-        /// <summary>Выполняет действие только для подходящего файла завершённого сравнения.</summary>
+        /// <summary>
+        /// Выполняет действие только для подходящего файла завершённого сравнения.
+        /// </summary>
         public async Task<IActionResult> ExecuteAsync(Guid id, string relativePath, FileMutationOperation operation, Stream body, CancellationToken token)
         {
             ScanJob? job = _jobs.Get(id);

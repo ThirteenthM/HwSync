@@ -3,10 +3,14 @@ using HwSync.Abstractions.Models;
 
 namespace HwSync.Infrastructure.FileSystem;
 
-/// <summary>Чтение снимка папки без перехода по ссылкам и junction.</summary>
+/// <summary>
+/// Чтение снимка папки без перехода по ссылкам и junction.
+/// </summary>
 public sealed class DirectorySnapshotProvider : IFileSnapshotProvider
 {
-    /// <summary>Обходит каталог, отклоняя ссылки и точки повторного анализа.</summary>
+    /// <summary>
+    /// Обходит каталог, отклоняя ссылки и точки повторного анализа.
+    /// </summary>
     private static IEnumerable<string> EnumerateFiles(string rootPath)
     {
         Stack<string> directories = new();
@@ -36,7 +40,9 @@ public sealed class DirectorySnapshotProvider : IFileSnapshotProvider
         }
     }
 
-    /// <summary>Возвращает снимок файлов относительно корневой папки.</summary>
+    /// <summary>
+    /// Возвращает снимок файлов относительно корневой папки.
+    /// </summary>
     public IReadOnlyCollection<FileSnapshot> GetSnapshot(string rootPath)
     {
         List<FileSnapshot> snapshots = [];

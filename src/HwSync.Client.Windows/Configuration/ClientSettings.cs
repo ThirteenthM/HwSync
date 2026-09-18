@@ -1,8 +1,16 @@
 namespace HwSync.Client.Windows.Configuration
 {
-    /// <summary>Адреса, пути и тайм-аут передачи файлов клиента.</summary>
+    /// <summary>
+    /// Адреса, пути и тайм-аут передачи файлов клиента.
+    /// </summary>
     public sealed class ClientSettings
     {
+        public bool TransferMetricsEnabled
+        {
+            get;
+            init;
+        } = true;
+
         public int FileTransferTimeoutSeconds
         {
             get;

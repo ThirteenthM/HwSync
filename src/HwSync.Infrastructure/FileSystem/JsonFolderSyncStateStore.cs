@@ -6,19 +6,25 @@ using HwSync.Abstractions.Models;
 
 namespace HwSync.Infrastructure.FileSystem
 {
-    /// <summary>Хранит подтверждённые состояния вне синхронизируемых папок; один процесс записи.</summary>
+    /// <summary>
+    /// Хранит подтверждённые состояния вне синхронизируемых папок; один процесс записи.
+    /// </summary>
     public sealed class JsonFolderSyncStateStore : IFolderSyncStateStore
     {
         private readonly string _directory;
         private readonly object _gate = new();
 
-        /// <summary>Задаёт каталог подтверждённых состояний синхронизации.</summary>
+        /// <summary>
+        /// Задаёт каталог подтверждённых состояний синхронизации.
+        /// </summary>
         public JsonFolderSyncStateStore(string directory)
         {
             _directory = Path.GetFullPath(directory);
         }
 
-        /// <summary>Читает состояние и проверяет принадлежность клиенту и папке.</summary>
+        /// <summary>
+        /// Читает состояние и проверяет принадлежность клиенту и папке.
+        /// </summary>
         public FolderSyncState? Load(Guid clientId, string folderId)
         {
             lock (_gate)
@@ -38,7 +44,9 @@ namespace HwSync.Infrastructure.FileSystem
             }
         }
 
-        /// <summary>Сохраняет подтверждённые версии файлов атомарной заменой состояния.</summary>
+        /// <summary>
+        /// Сохраняет подтверждённые версии файлов атомарной заменой состояния.
+        /// </summary>
         public void Save(FolderSyncState acknowledgedState)
         {
             ArgumentNullException.ThrowIfNull(acknowledgedState);
@@ -63,7 +71,9 @@ namespace HwSync.Infrastructure.FileSystem
             }
         }
 
-        /// <summary>Получает путь состояния по идентификаторам клиента и папки.</summary>
+        /// <summary>
+        /// Получает путь состояния по идентификаторам клиента и папки.
+        /// </summary>
         private string GetPath(Guid clientId, string folderId)
         {
             if (clientId == Guid.Empty || string.IsNullOrWhiteSpace(folderId))

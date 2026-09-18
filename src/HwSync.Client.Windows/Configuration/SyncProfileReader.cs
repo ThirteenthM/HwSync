@@ -3,10 +3,14 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 namespace HwSync.Client.Windows.Configuration
 {
-    /// <summary>Чтение профилей папок с проверкой поддерживаемых правил.</summary>
+    /// <summary>
+    /// Чтение профилей папок с проверкой поддерживаемых правил.
+    /// </summary>
     public static class SyncProfileReader
     {
-        /// <summary>Читает профили либо создаёт профиль из общих настроек.</summary>
+        /// <summary>
+        /// Читает профили либо создаёт профиль из общих настроек.
+        /// </summary>
         public static IReadOnlyList<SyncProfile> Load(string path, ClientSettings fallback)
         {
             if (!File.Exists(path))

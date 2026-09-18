@@ -9,10 +9,14 @@ using HwSync.Client.Windows.ViewModels;
 
 namespace HwSync.Client.Tests
 {
-    /// <summary>Проверки размещения результатов в окне клиента.</summary>
+    /// <summary>
+    /// Проверки размещения результатов в окне клиента.
+    /// </summary>
     public class WindowTests
     {
-        /// <summary>Проверяет построение окна с результатами сравнения.</summary>
+        /// <summary>
+        /// Проверяет построение окна с результатами сравнения.
+        /// </summary>
         [Test]
         [Apartment(ApartmentState.STA)]
         public async Task Window_CanLayoutResults()
@@ -54,21 +58,31 @@ namespace HwSync.Client.Tests
             }
         }
 
-        /// <summary>Подставной API-клиент с данными для проверки окна.</summary>
+        /// <summary>
+        /// Подставной API-клиент с данными для проверки окна.
+        /// </summary>
         private sealed class PreviewClient : IHwSyncApiClient
         {
             private readonly Guid _id = Guid.NewGuid();
 
-            /// <summary>Запрашивает готовность сервера.</summary>
+            /// <summary>
+            /// Запрашивает готовность сервера.
+            /// </summary>
             public Task<HealthResponse> GetHealthAsync(CancellationToken cancellationToken = default) => Task.FromResult(new HealthResponse("ok"));
 
-            /// <summary>Отправляет снимок клиента и запускает сравнение на сервере.</summary>
+            /// <summary>
+            /// Отправляет снимок клиента и запускает сравнение на сервере.
+            /// </summary>
             public Task<ScanJobResponse> StartComparisonAsync(CompareFoldersRequest request, CancellationToken cancellationToken = default) => GetScanAsync(_id, cancellationToken);
 
-            /// <summary>Запрашивает отмену задания на сервере.</summary>
+            /// <summary>
+            /// Запрашивает отмену задания на сервере.
+            /// </summary>
             public Task<ScanJobResponse> CancelScanAsync(Guid id, CancellationToken cancellationToken = default) => GetScanAsync(id, cancellationToken);
 
-            /// <summary>Получает состояние и результат задания.</summary>
+            /// <summary>
+            /// Получает состояние и результат задания.
+            /// </summary>
             public Task<ScanJobResponse> GetScanAsync(Guid id, CancellationToken cancellationToken = default) => Task.FromResult(new ScanJobResponse(
                 _id, ScanJobState.Completed, DateTimeOffset.UtcNow, DateTimeOffset.UtcNow,
                 [new(FileChangeKind.Created, null, new("Documents/report.docx", 24576, DateTime.UtcNow)),

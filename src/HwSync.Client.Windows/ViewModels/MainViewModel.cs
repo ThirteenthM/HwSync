@@ -12,7 +12,9 @@ using HwSync.Api.Contracts;
 
 namespace HwSync.Client.Windows.ViewModels
 {
-    /// <summary>Состояние формы и управление командами сравнения и синхронизации.</summary>
+    /// <summary>
+    /// Состояние формы и управление командами сравнения и синхронизации.
+    /// </summary>
     public sealed partial class MainViewModel : ObservableObject, IDisposable
     {
         private readonly Func<Uri, IHwSyncApiClient> _createClient;
@@ -34,7 +36,9 @@ namespace HwSync.Client.Windows.ViewModels
         private bool _cancelRequested;
         private IReadOnlyList<ChangeRow> _changes = Array.Empty<ChangeRow>();
 
-        /// <summary>Связывает команды формы с API и чтением локальных снимков.</summary>
+        /// <summary>
+        /// Связывает команды формы с API и чтением локальных снимков.
+        /// </summary>
         public MainViewModel(Func<Uri, IHwSyncApiClient> createClient, IFileSnapshotProvider snapshotProvider)
         {
             _createClient = createClient;
@@ -179,7 +183,9 @@ namespace HwSync.Client.Windows.ViewModels
             get;
         }
 
-        /// <summary>Заполняет список профилей и выбирает первый.</summary>
+        /// <summary>
+        /// Заполняет список профилей и выбирает первый.
+        /// </summary>
         public void LoadProfiles(IReadOnlyList<SyncProfile> profiles)
         {
             Profiles = profiles;
@@ -187,10 +193,14 @@ namespace HwSync.Client.Windows.ViewModels
             SelectedProfile = profiles.FirstOrDefault();
         }
 
-        /// <summary>Проверяет готовность результата сравнения к файловым операциям.</summary>
+        /// <summary>
+        /// Проверяет готовность результата сравнения к файловым операциям.
+        /// </summary>
         private bool CanMutate() => !_busy && _completedComparison is not null && _jobClient is IFileMutationClient;
 
-        /// <summary>Отменяет передачу файлов либо запрашивает отмену задания.</summary>
+        /// <summary>
+        /// Отменяет передачу файлов либо запрашивает отмену задания.
+        /// </summary>
         private async Task CancelAsync()
         {
             if (_copyCancellation is not null)
@@ -228,7 +238,9 @@ namespace HwSync.Client.Windows.ViewModels
             }
         }
 
-        /// <summary>Выполняет команду с обновлением занятости и обработкой ошибок.</summary>
+        /// <summary>
+        /// Выполняет команду с обновлением занятости и обработкой ошибок.
+        /// </summary>
         private async Task ExecuteAsync(Func<Task> action)
         {
             _busy = true;
@@ -261,7 +273,9 @@ namespace HwSync.Client.Windows.ViewModels
             }
         }
 
-        /// <summary>Преобразует исключение в сообщение для пользователя.</summary>
+        /// <summary>
+        /// Преобразует исключение в сообщение для пользователя.
+        /// </summary>
         private static string DescribeError(Exception exception) => exception switch
         {
             HwSyncApiException api => api.Message,
@@ -270,7 +284,9 @@ namespace HwSync.Client.Windows.ViewModels
             _ => exception.Message
         };
 
-        /// <summary>Обновляет доступность команд и редактирования формы.</summary>
+        /// <summary>
+        /// Обновляет доступность команд и редактирования формы.
+        /// </summary>
         private void RefreshCommands()
         {
             UploadCommand.NotifyCanExecuteChanged();
@@ -285,7 +301,9 @@ namespace HwSync.Client.Windows.ViewModels
             OnPropertyChanged(nameof(CanEditConnection));
         }
 
-        /// <summary>Отменяет работу модели и освобождает источник отмены.</summary>
+        /// <summary>
+        /// Отменяет работу модели и освобождает источник отмены.
+        /// </summary>
         public void Dispose()
         {
             _lifetime.Cancel();

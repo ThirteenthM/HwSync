@@ -5,7 +5,9 @@ using HwSync.Api.Contracts;
 
 namespace HwSync.Api.Client
 {
-    /// <summary>HTTP-клиент сравнения папок и передачи файлов.</summary>
+    /// <summary>
+    /// HTTP-клиент сравнения папок и передачи файлов.
+    /// </summary>
     public sealed class HwSyncApiClient : IHwSyncApiClient, IFileDownloadClient, IFileMutationClient
     {
         private static readonly JsonSerializerOptions JsonOptions = CreateJsonOptions();
@@ -14,7 +16,9 @@ namespace HwSync.Api.Client
         private readonly HttpClient _transferClient;
         private readonly TimeSpan _transferTimeout;
 
-        /// <summary>Принимает HTTP-клиенты и интервал ожидания прогресса передачи.</summary>
+        /// <summary>
+        /// Принимает HTTP-клиенты и интервал ожидания прогресса передачи.
+        /// </summary>
         public HwSyncApiClient(HttpClient httpClient, Uri serverAddress, HttpClient? transferClient = null, TimeSpan? transferTimeout = null)
         {
             ArgumentNullException.ThrowIfNull(httpClient);
@@ -34,23 +38,33 @@ namespace HwSync.Api.Client
             _serverAddress = new(serverAddress.AbsoluteUri.TrimEnd('/') + "/");
         }
 
-        /// <summary>Запрашивает готовность сервера.</summary>
+        /// <summary>
+        /// Запрашивает готовность сервера.
+        /// </summary>
         public Task<HealthResponse> GetHealthAsync(CancellationToken cancellationToken = default) =>
             SendAsync<HealthResponse>(HttpMethod.Get, "health", null, cancellationToken);
 
-        /// <summary>Отправляет снимок клиента и запускает сравнение на сервере.</summary>
+        /// <summary>
+        /// Отправляет снимок клиента и запускает сравнение на сервере.
+        /// </summary>
         public Task<ScanJobResponse> StartComparisonAsync(CompareFoldersRequest request, CancellationToken cancellationToken = default) =>
             SendAsync<ScanJobResponse>(HttpMethod.Post, "api/v1/scan-jobs", request, cancellationToken);
 
-        /// <summary>Получает состояние и результат задания.</summary>
+        /// <summary>
+        /// Получает состояние и результат задания.
+        /// </summary>
         public Task<ScanJobResponse> GetScanAsync(Guid id, CancellationToken cancellationToken = default) =>
             SendAsync<ScanJobResponse>(HttpMethod.Get, $"api/v1/scan-jobs/{id}", null, cancellationToken);
 
-        /// <summary>Запрашивает отмену задания на сервере.</summary>
+        /// <summary>
+        /// Запрашивает отмену задания на сервере.
+        /// </summary>
         public Task<ScanJobResponse> CancelScanAsync(Guid id, CancellationToken cancellationToken = default) =>
             SendAsync<ScanJobResponse>(HttpMethod.Post, $"api/v1/scan-jobs/{id}/cancel", null, cancellationToken);
 
-        /// <summary>Скачивает файл из результата сравнения в переданный поток.</summary>
+        /// <summary>
+        /// Скачивает файл из результата сравнения в переданный поток.
+        /// </summary>
         public async Task DownloadFileAsync(Guid jobId, string relativePath, Stream destination, CancellationToken cancellationToken = default)
         {
             using CancellationTokenSource transfer = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
@@ -67,19 +81,27 @@ namespace HwSync.Api.Client
             await response.Content.CopyToAsync(output, cancellationToken).ConfigureAwait(false);
         }
 
-        /// <summary>Передаёт отсутствующий на сервере файл без перезаписи.</summary>
+        /// <summary>
+        /// Передаёт отсутствующий на сервере файл без перезаписи.
+        /// </summary>
         public Task UploadFileAsync(Guid jobId, string relativePath, Stream source, CancellationToken token) =>
             MutateAsync(HttpMethod.Put, jobId, "file", relativePath, source, token);
 
-        /// <summary>Удаляет серверный файл из выбранного сравнения.</summary>
+        /// <summary>
+        /// Удаляет серверный файл из выбранного сравнения.
+        /// </summary>
         public Task DeleteServerFileAsync(Guid jobId, string relativePath, CancellationToken token) =>
             MutateAsync(HttpMethod.Delete, jobId, "file", relativePath, null, token);
 
-        /// <summary>Проверяет отсутствие файла на сервере перед локальным удалением.</summary>
+        /// <summary>
+        /// Проверяет отсутствие файла на сервере перед локальным удалением.
+        /// </summary>
         public Task EnsureServerFileMissingAsync(Guid jobId, string relativePath, CancellationToken token) =>
             MutateAsync(HttpMethod.Post, jobId, "verify-missing", relativePath, null, token);
 
-        /// <summary>Выполняет файловый запрос с отдельным ожиданием прогресса загрузки.</summary>
+        /// <summary>
+        /// Выполняет файловый запрос с отдельным ожиданием прогресса загрузки.
+        /// </summary>
         private async Task MutateAsync(HttpMethod method, Guid jobId, string endpoint, string relativePath, Stream? source, CancellationToken token)
         {
             using HttpRequestMessage request = new(method, new Uri(_serverAddress,
@@ -99,7 +121,9 @@ namespace HwSync.Api.Client
             }
         }
 
-        /// <summary>Выполняет запрос и преобразует ответ или ошибку API.</summary>
+        /// <summary>
+        /// Выполняет запрос и преобразует ответ или ошибку API.
+        /// </summary>
         private async Task<T> SendAsync<T>(HttpMethod method, string path, CompareFoldersRequest? body, CancellationToken cancellationToken)
         {
             using HttpRequestMessage request = new(method, new Uri(_serverAddress, path));
@@ -143,7 +167,9 @@ namespace HwSync.Api.Client
             }
         }
 
-        /// <summary>Настраивает JSON с текстовыми значениями перечислений.</summary>
+        /// <summary>
+        /// Настраивает JSON с текстовыми значениями перечислений.
+        /// </summary>
         private static JsonSerializerOptions CreateJsonOptions()
         {
             JsonSerializerOptions options = new(JsonSerializerDefaults.Web);

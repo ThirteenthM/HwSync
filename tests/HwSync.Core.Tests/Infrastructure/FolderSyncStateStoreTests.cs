@@ -4,10 +4,14 @@ using HwSync.Infrastructure.FileSystem;
 
 namespace HwSync.Core.Tests.Infrastructure
 {
-    /// <summary>Проверки сохранения подтверждённых состояний синхронизации.</summary>
+    /// <summary>
+    /// Проверки сохранения подтверждённых состояний синхронизации.
+    /// </summary>
     public class FolderSyncStateStoreTests
     {
-        /// <summary>Проверяет сохранение версий и изоляцию клиентов и папок.</summary>
+        /// <summary>
+        /// Проверяет сохранение версий и изоляцию клиентов и папок.
+        /// </summary>
         [Test]
         public void Save_ReloadsAcknowledgedVersionsAndSeparatesClientsAndFolders()
         {
@@ -31,7 +35,9 @@ namespace HwSync.Core.Tests.Infrastructure
             Assert.That(Directory.GetFiles(directory, "*.tmp"), Is.Empty);
         }
 
-        /// <summary>Проверяет отказ чтения повреждённого состояния вместо потери истории.</summary>
+        /// <summary>
+        /// Проверяет отказ чтения повреждённого состояния вместо потери истории.
+        /// </summary>
         [Test]
         public void Load_CorruptedStateDoesNotBecomeEmptyBaseline()
         {

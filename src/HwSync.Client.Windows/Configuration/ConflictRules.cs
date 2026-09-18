@@ -2,7 +2,9 @@ using HwSync.Abstractions.Models;
 
 namespace HwSync.Client.Windows.Configuration
 {
-    /// <summary>Правила текущего режима копирования отсутствующих файлов.</summary>
+    /// <summary>
+    /// Правила текущего режима копирования отсутствующих файлов.
+    /// </summary>
     public sealed class ConflictRules
     {
         public string MissingOnClient

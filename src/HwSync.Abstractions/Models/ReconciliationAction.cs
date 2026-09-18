@@ -1,6 +1,8 @@
 namespace HwSync.Abstractions.Models
 {
-    /// <summary>Действие плана двустороннего согласования.</summary>
+    /// <summary>
+    /// Действие плана двустороннего согласования.
+    /// </summary>
     public enum ReconciliationAction
     {
         None,
