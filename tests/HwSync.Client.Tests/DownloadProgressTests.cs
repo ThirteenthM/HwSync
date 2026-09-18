@@ -92,11 +92,7 @@ namespace HwSync.Client.Tests
         /// </summary>
         private sealed class DownloadClient : IHwSyncApiClient, IFileDownloadClient
         {
-            public Action? OnDownload
-            {
-                get;
-                set;
-            }
+            public Action? OnDownload { get; set; }
 
             /// <summary>
             /// Возвращает готовность тестового сервера.

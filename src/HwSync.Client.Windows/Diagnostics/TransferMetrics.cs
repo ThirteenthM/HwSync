@@ -22,14 +22,8 @@ namespace HwSync.Client.Windows.Diagnostics
             Files = new(_files);
         }
 
-        public string Direction
-        {
-            get;
-        }
-        public ReadOnlyObservableCollection<FileTransferMeasurement> Files
-        {
-            get;
-        }
+        public string Direction { get; }
+        public ReadOnlyObservableCollection<FileTransferMeasurement> Files { get; }
         public long ConfirmedBytes => _confirmedBytes;
         public TimeSpan Duration => _clock.Elapsed;
         public double MebibytesPerSecond => Duration.TotalSeconds > 0

@@ -16,16 +16,9 @@ namespace HwSync.Core.Tests.Services
         /// </summary>
         private sealed class StubFileSnapshotProvider : IFileSnapshotProvider
         {
-            public IReadOnlyCollection<FileSnapshot> Snapshot
-            {
-                get;
-                set;
-            }
+            public IReadOnlyCollection<FileSnapshot> Snapshot { get; set; }
 
-            public List<string> RequestedRootPaths
-            {
-                get;
-            } = [];
+            public List<string> RequestedRootPaths { get; } = [];
 
             /// <summary>
             /// Задаёт снимки для последовательных обращений теста.

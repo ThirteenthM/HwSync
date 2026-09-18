@@ -158,21 +158,9 @@ namespace HwSync.Client.Tests
         private sealed class StubClient : IHwSyncApiClient
         {
             private readonly Guid _id = Guid.NewGuid();
-            public bool FailPoll
-            {
-                get;
-                set;
-            } = true;
-            public int Starts
-            {
-                get;
-                private set;
-            }
-            public int Cancels
-            {
-                get;
-                private set;
-            }
+            public bool FailPoll { get; set; } = true;
+            public int Starts { get; private set; }
+            public int Cancels { get; private set; }
 
             /// <summary>
             /// Запрашивает готовность сервера.

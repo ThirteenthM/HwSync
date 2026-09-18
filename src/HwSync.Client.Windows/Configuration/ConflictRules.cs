@@ -1,5 +1,3 @@
-using HwSync.Abstractions.Models;
-
 namespace HwSync.Client.Windows.Configuration
 {
     /// <summary>
@@ -7,25 +5,12 @@ namespace HwSync.Client.Windows.Configuration
     /// </summary>
     public sealed class ConflictRules
     {
-        public string MissingOnClient
-        {
-            get;
-            init;
-        } = "Copy";
-        public string DifferentFiles
-        {
-            get;
-            init;
-        } = "Skip";
-        public string ClientOnlyFiles
-        {
-            get;
-            init;
-        } = "Keep";
-        public string ServerDeletions
-        {
-            get;
-            init;
-        } = "RecordOnly";
+        public SyncRule MissingOnClient { get; init; } = SyncRule.Copy;
+
+        public SyncRule DifferentFiles { get; init; } = SyncRule.Skip;
+
+        public SyncRule ClientOnlyFiles { get; init; } = SyncRule.Keep;
+
+        public SyncRule ServerDeletions { get; init; } = SyncRule.RecordOnly;
     }
 }

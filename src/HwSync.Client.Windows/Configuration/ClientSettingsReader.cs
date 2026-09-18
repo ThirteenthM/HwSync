@@ -8,10 +8,17 @@ namespace HwSync.Client.Windows.Configuration
     /// </summary>
     public static class ClientSettingsReader
     {
+        public static JsonSerializerOptions GetOptions() => new()
+        {
+            PropertyNameCaseInsensitive = true,
+            ReadCommentHandling = JsonCommentHandling.Skip,
+            AllowTrailingCommas = true
+        };
+
         /// <summary>
         /// Читает настройки из JSON или возвращает значения по умолчанию.
         /// </summary>
-        public static ClientSettings Load(string filePath)
+        public static ClientSettings Load(string filePath, JsonSerializerOptions options)
         {
             if (!File.Exists(filePath))
             {
@@ -19,15 +26,10 @@ namespace HwSync.Client.Windows.Configuration
             }
 
             using FileStream stream = File.OpenRead(filePath);
-            ClientSettings settings = JsonSerializer.Deserialize<ClientSettings>(stream, new JsonSerializerOptions
-            {
-                PropertyNameCaseInsensitive = true,
-                ReadCommentHandling = JsonCommentHandling.Skip,
-                AllowTrailingCommas = true
-            }) ?? throw new InvalidDataException("Конфигурация клиента не должна быть null.");
 
-            if (!Uri.TryCreate(settings.ServerAddress, UriKind.Absolute, out Uri? address)
-                || address.Scheme is not ("http" or "https"))
+            ClientSettings settings = JsonSerializer.Deserialize<ClientSettings>(stream, options) ?? throw new InvalidDataException("Конфигурация клиента не должна быть null.");
+
+            if (!Uri.TryCreate(settings.ServerAddress, UriKind.Absolute, out Uri? address) || address.Scheme is not ("http" or "https"))
             {
                 throw new InvalidDataException("ServerAddress должен быть HTTP(S)-адресом сервера.");
             }

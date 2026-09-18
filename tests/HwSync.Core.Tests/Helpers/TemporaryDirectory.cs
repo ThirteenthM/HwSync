@@ -5,10 +5,7 @@ namespace HwSync.Core.Tests.Helpers;
 /// </summary>
 internal sealed class TemporaryDirectory : IDisposable
 {
-    public string Path
-    {
-        get;
-    }
+    public string Path { get; }
 
     /// <summary>
     /// Создаёт отдельную папку теста.

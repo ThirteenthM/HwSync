@@ -74,7 +74,7 @@ namespace HwSync.Client.Tests
             File.WriteAllText(path, json);
             try
             {
-                Assert.That(ClientSettingsReader.Load(path).FileTransferTimeoutSeconds, Is.EqualTo(expected));
+                Assert.That(ClientSettingsReader.Load(path, ClientSettingsReader.GetOptions()).FileTransferTimeoutSeconds, Is.EqualTo(expected));
             }
             finally
             {
@@ -94,7 +94,7 @@ namespace HwSync.Client.Tests
             File.WriteAllText(path, "{\"FileTransferTimeoutSeconds\":" + value + "}");
             try
             {
-                Assert.Throws<InvalidDataException>(() => ClientSettingsReader.Load(path));
+                Assert.Throws<InvalidDataException>(() => ClientSettingsReader.Load(path, ClientSettingsReader.GetOptions()));
             }
             finally
             {

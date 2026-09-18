@@ -78,16 +78,8 @@ namespace HwSync.Client.Tests
         /// </summary>
         private sealed class ManualClient : IHwSyncApiClient, IFileMutationClient
         {
-            public int Verifications
-            {
-                get;
-                private set;
-            }
-            public string? Uploaded
-            {
-                get;
-                private set;
-            }
+            public int Verifications { get; private set; }
+            public string? Uploaded { get; private set; }
 
             /// <summary>
             /// Запрашивает готовность сервера.

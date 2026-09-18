@@ -12,11 +12,7 @@ namespace HwSync.Client.Windows.ViewModels
         private TransferMetrics? _transferMetrics;
         private string _metricsSummary = "";
 
-        public bool TransferMetricsEnabled
-        {
-            get;
-            init;
-        } = true;
+        public bool TransferMetricsEnabled { get; init; } = true;
 
         public TransferMetrics? TransferMetrics
         {

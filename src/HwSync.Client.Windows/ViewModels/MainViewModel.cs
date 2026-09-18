@@ -53,11 +53,7 @@ namespace HwSync.Client.Windows.ViewModels
             CancelCommand = new AsyncRelayCommand(CancelAsync, () => (_copyCancellation is not null || HasActiveJob) && !_cancelRequested);
         }
 
-        public IReadOnlyList<SyncProfile> Profiles
-        {
-            get;
-            private set;
-        } = [];
+        public IReadOnlyList<SyncProfile> Profiles { get; private set; } = [];
 
         public SyncProfile? SelectedProfile
         {
@@ -145,43 +141,15 @@ namespace HwSync.Client.Windows.ViewModels
         public string ResultSummary => $"Найдено различий: {Changes.Count}";
         public bool HasActiveJob => _activeJob.HasValue;
         public bool CanEditConnection => !_busy && !HasActiveJob;
-        public Func<string, IReadOnlyList<string>, bool>? ConfirmDeletion
-        {
-            get;
-            set;
-        }
-        public IAsyncRelayCommand UploadCommand
-        {
-            get;
-        }
-        public IAsyncRelayCommand DeleteServerCommand
-        {
-            get;
-        }
-        public IAsyncRelayCommand DeleteClientCommand
-        {
-            get;
-        }
-        public IAsyncRelayCommand CopyCommand
-        {
-            get;
-        }
-        public IAsyncRelayCommand ConnectCommand
-        {
-            get;
-        }
-        public IAsyncRelayCommand StartCommand
-        {
-            get;
-        }
-        public IAsyncRelayCommand ResumeCommand
-        {
-            get;
-        }
-        public IAsyncRelayCommand CancelCommand
-        {
-            get;
-        }
+        public Func<string, IReadOnlyList<string>, bool>? ConfirmDeletion { get; set; }
+        public IAsyncRelayCommand UploadCommand { get; }
+        public IAsyncRelayCommand DeleteServerCommand { get; }
+        public IAsyncRelayCommand DeleteClientCommand { get; }
+        public IAsyncRelayCommand CopyCommand { get; }
+        public IAsyncRelayCommand ConnectCommand { get; }
+        public IAsyncRelayCommand StartCommand { get; }
+        public IAsyncRelayCommand ResumeCommand { get; }
+        public IAsyncRelayCommand CancelCommand { get; }
 
         /// <summary>
         /// Заполняет список профилей и выбирает первый.

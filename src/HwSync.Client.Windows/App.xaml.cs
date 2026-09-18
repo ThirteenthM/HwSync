@@ -34,7 +34,7 @@ namespace HwSync.Client.Windows
             string configPath = Path.Combine(AppContext.BaseDirectory, "appsettings.json");
             try
             {
-                settings = ClientSettingsReader.Load(configPath);
+                settings = ClientSettingsReader.Load(configPath, ClientSettingsReader.GetOptions());
                 configPath = Path.Combine(AppContext.BaseDirectory, "sync-profiles.json");
                 profiles = SyncProfileReader.Load(configPath, settings);
             }

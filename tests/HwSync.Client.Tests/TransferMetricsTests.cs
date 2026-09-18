@@ -43,7 +43,7 @@ namespace HwSync.Client.Tests
             File.WriteAllText(path, json);
             try
             {
-                Assert.That(ClientSettingsReader.Load(path).TransferMetricsEnabled, Is.EqualTo(expected));
+                Assert.That(ClientSettingsReader.Load(path, ClientSettingsReader.GetOptions()).TransferMetricsEnabled, Is.EqualTo(expected));
             }
             finally
             {

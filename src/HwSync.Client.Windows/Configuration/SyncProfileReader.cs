@@ -49,8 +49,8 @@ namespace HwSync.Client.Windows.Configuration
                 {
                     throw new InvalidDataException("Не заданы правила согласования.");
                 }
-                if (profile.Rules is null || profile.Rules.MissingOnClient != "Copy" || profile.Rules.DifferentFiles != "Skip"
-                    || profile.Rules.ClientOnlyFiles != "Keep" || profile.Rules.ServerDeletions != "RecordOnly")
+                if (profile.Rules is null || profile.Rules.MissingOnClient != SyncRule.Copy || profile.Rules.DifferentFiles != SyncRule.Skip
+                    || profile.Rules.ClientOnlyFiles != SyncRule.Keep || profile.Rules.ServerDeletions != SyncRule.RecordOnly)
                 {
                     throw new InvalidDataException("Пока поддерживаются правила Copy / Skip / Keep / RecordOnly. Неподдерживаемая стратегия не применяется молча.");
                 }
