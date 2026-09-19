@@ -33,7 +33,7 @@ namespace HwSync.Client.Tests
             {
                 ConflictRules rules = new SyncProfileReader(new()).Load(path).Single().Rules;
                 Assert.That(rules.MissingOnClient, Is.EqualTo(SyncRule.Copy));
-                Assert.That(rules.DifferentFiles, Is.EqualTo(SyncRule.Skip));
+                Assert.That(rules.DifferentFiles, Is.EqualTo(includeRules ? SyncRule.Skip : SyncRule.AskUser));
                 Assert.That(rules.ClientOnlyFiles, Is.EqualTo(SyncRule.Keep));
                 Assert.That(rules.ServerDeletions, Is.EqualTo(SyncRule.RecordOnly));
             }
@@ -106,6 +106,7 @@ namespace HwSync.Client.Tests
         [TestCase("ClientOnlyFiles", "Delete")]
         [TestCase("ClientOnlyFiles", "Skip")]
         [TestCase("DifferentFiles", "Keep")]
+        [TestCase("DifferentFiles", "AskUser")]
         public void Load_AcceptsAutomaticRules(string property, string value)
         {
             Dictionary<string, object> profile = CreateProfile();

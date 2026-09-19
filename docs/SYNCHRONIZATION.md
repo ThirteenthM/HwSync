@@ -16,7 +16,7 @@
     "ClientRootPath": "E:/HwSync/Client001",
     "Rules": {
       "MissingOnClient": "Copy",
-      "DifferentFiles": "Skip",
+      "DifferentFiles": "AskUser",
       "ClientOnlyFiles": "Keep",
       "ServerDeletions": "RecordOnly"
     }

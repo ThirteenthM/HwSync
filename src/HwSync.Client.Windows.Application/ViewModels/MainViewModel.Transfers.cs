@@ -1,6 +1,5 @@
 using HwSync.Client.Windows.Contract.ViewModels;
 using HwSync.Client.Windows.Contract.Configuration;
-using HwSync.Infrastructure.FileSystem;
 using HwSync.Abstractions.FileSystem;
 using HwSync.Abstractions.Models;
 using System.IO;

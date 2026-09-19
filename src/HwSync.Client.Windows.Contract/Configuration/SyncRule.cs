@@ -9,6 +9,7 @@ namespace HwSync.Client.Windows.Contract.Configuration
         Skip,
         Keep,
         RecordOnly,
-        Delete
+        Delete,
+        AskUser
     }
 }

@@ -62,10 +62,10 @@ namespace HwSync.Client.Windows.Application.Configuration
                     throw new InvalidDataException("Не заданы правила согласования.");
                 }
 
-                if (profile.Rules is null || profile.Rules.MissingOnClient is not (SyncRule.Copy or SyncRule.Keep or SyncRule.Skip or SyncRule.Delete) || profile.Rules.DifferentFiles is not (SyncRule.Skip or SyncRule.Keep)
+                if (profile.Rules is null || profile.Rules.MissingOnClient is not (SyncRule.Copy or SyncRule.Keep or SyncRule.Skip or SyncRule.Delete) || profile.Rules.DifferentFiles is not (SyncRule.AskUser or SyncRule.Skip or SyncRule.Keep)
                     || profile.Rules.ClientOnlyFiles is not (SyncRule.Copy or SyncRule.Keep or SyncRule.Skip or SyncRule.Delete) || profile.Rules.ServerDeletions != SyncRule.RecordOnly)
                 {
-                    throw new InvalidDataException("Недопустимое правило профиля: односторонние файлы — Copy / Skip / Keep / Delete, разные файлы — Skip / Keep, история удалений — RecordOnly.");
+                    throw new InvalidDataException("Недопустимое правило профиля: односторонние файлы — Copy / Skip / Keep / Delete, разные файлы — AskUser / Skip / Keep, история удалений — RecordOnly.");
                 }
             }
         }

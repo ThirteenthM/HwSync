@@ -13,6 +13,7 @@
     </Folder>
     <Folder Name="/tests/">
         <Project Path="tests/HwSync.Client.Tests/HwSync.Client.Tests.csproj" />
+        <Project Path="tests/HwSync.Client.Windows.Host.Tests/HwSync.Client.Windows.Host.Tests.csproj" />
         <Project Path="tests/HwSync.Core.Tests/HwSync.Core.Tests.csproj" />
         <Project Path="tests/HwSync.Host.Tests/HwSync.Host.Tests.csproj" />
     </Folder>

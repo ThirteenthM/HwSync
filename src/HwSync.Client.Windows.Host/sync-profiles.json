@@ -3,7 +3,7 @@
     "ServerAddress": "http://localhost:5080",
     "Name": "Основная папка",
     "Rules": {
-      "DifferentFiles": "Skip",
+      "DifferentFiles": "AskUser",
       "MissingOnClient": "Copy",
       "ServerDeletions": "RecordOnly",
       "ClientOnlyFiles": "Keep"

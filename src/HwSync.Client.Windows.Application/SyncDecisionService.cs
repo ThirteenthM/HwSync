@@ -16,7 +16,12 @@ namespace HwSync.Client.Windows.Application
         {
             if (existsOnClient && existsOnServer)
             {
-                return rules.DifferentFiles == SyncRule.Keep ? FileSyncDecision.Skip : FileSyncDecision.AskUser;
+                return rules.DifferentFiles switch
+                {
+                    SyncRule.Skip or SyncRule.Keep => FileSyncDecision.Skip,
+                    SyncRule.AskUser => FileSyncDecision.AskUser,
+                    _ => FileSyncDecision.AskUser
+                };
             }
 
             if (existsOnServer)

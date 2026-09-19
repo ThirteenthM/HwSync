@@ -8,7 +8,7 @@ using HwSync.Client.Windows.Host;
 using HwSync.Client.Windows.Application.ViewModels;
 using HwSync.Client.Windows.Contract.ViewModels;
 
-namespace HwSync.Client.Tests
+namespace HwSync.Client.Windows.Host.Tests
 {
     /// <summary>
     /// Проверки размещения результатов в окне клиента.

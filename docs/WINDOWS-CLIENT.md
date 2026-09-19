@@ -39,7 +39,9 @@ dotnet run --project src/HwSync.Client.Windows.Host
 - HwSync.Client.Windows.Host: WPF-окна, запуск и контейнер DI. Главное окно принимает IMainViewModel.
 - HwSync.Client.Windows.Contract: настройки, перечисления, данные формы и интерфейсы. Без зависимости от WPF и реализаций клиента.
 - HwSync.Client.Windows.Application: загрузчики конфигурации, MainViewModel, метрики и регистрация реализаций через AddWindowsClientApplication. Контейнер управляет временем жизни модели и HTTP-клиентов.
-- HwSync.Client.Tests: проверки библиотеки, восстановления опроса, отмены и компоновки окна. Интеграционный тест в HwSync.Host.Tests проверяет библиотеку клиента против реального локального HTTP API.
+- HwSync.Client.Tests: проверки стратегии, конфигурации, ViewModel, передачи файлов и DI без окна; net10.0, ссылка только на Application.
+- HwSync.Client.Windows.Host.Tests: проверки компоновки окна и его создания через DI; net10.0-windows, WPF и ссылка на Host.
+- HwSync.Host.Tests: интеграционные проверки библиотеки клиента против реального локального HTTP API.
 
 Для отдельного запуска приложению нужен .NET 10 Desktop Runtime. Пример публикации с включённым runtime:
 
@@ -106,10 +108,10 @@ dotnet publish src/HwSync.Client.Windows.Host -c Release -r win-x64 --self-conta
 
 - MissingOnClient: Copy — скачать, Delete — удалить серверную копию, Skip или Keep — оставить без изменений.
 - ClientOnlyFiles: Copy — отправить на сервер, Delete — удалить клиентскую копию, Skip или Keep — оставить без изменений.
-- DifferentFiles: Skip — показать вопрос и отложить решение, Keep — явно оставить обе существующие копии на своих местах.
+- DifferentFiles: AskUser — показать вопрос и отложить решение; Skip или Keep — оставить обе существующие копии на своих местах без запроса решения.
 - ServerDeletions: пока только RecordOnly. Отсутствие файла не считается доказательством удаления; история удалений не используется этим планом.
 
-По умолчанию MissingOnClient = Copy, ClientOnlyFiles = Keep, DifferentFiles = Skip. Для обмена недостающими файлами в обе стороны установите ClientOnlyFiles = Copy. Файлы с различиями не перезаписываются.
+По умолчанию MissingOnClient = Copy, ClientOnlyFiles = Keep, DifferentFiles = AskUser. Для обмена недостающими файлами в обе стороны установите ClientOnlyFiles = Copy. Файлы с различиями не перезаписываются. В старых профилях замените DifferentFiles = Skip на AskUser, если нужен вопрос в таблице: теперь Skip означает явный пропуск.
 
 Удаление требует подтверждения списка на каждой стороне до начала выполнения плана. Правило Delete для односторонних файлов явно выбирает удаление существующей копии; это не обнаружение удаления по истории. Проверки актуальности файлов перед действиями сохраняются.
 

@@ -33,6 +33,19 @@ namespace HwSync.Client.Tests
         }
 
         /// <summary>
+        /// Отличает запрос решения от явного пропуска конфликтующих файлов.
+        /// </summary>
+        [TestCase(SyncRule.AskUser, FileSyncDecision.AskUser)]
+        [TestCase(SyncRule.Skip, FileSyncDecision.Skip)]
+        [TestCase(SyncRule.Keep, FileSyncDecision.Skip)]
+        [TestCase(SyncRule.Copy, FileSyncDecision.AskUser)]
+        public void Strategy_DifferentFilesHasExplicitMeaning(SyncRule rule, FileSyncDecision expected)
+        {
+            ISyncDecisionService service = new SyncDecisionService();
+            Assert.That(service.Decide(true, true, new() { DifferentFiles = rule }), Is.EqualTo(expected));
+        }
+
+        /// <summary>
         /// Выполняет оба направления, оставляя отличающийся файл без изменений.
         /// </summary>
         [Test]
