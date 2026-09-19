@@ -1,6 +1,7 @@
 using System.IO;
 using System.Text.Json;
-using HwSync.Client.Windows.Configuration;
+using HwSync.Client.Windows.Application.Configuration;
+using HwSync.Client.Windows.Contract.Configuration;
 
 namespace HwSync.Client.Tests
 {
@@ -30,7 +31,7 @@ namespace HwSync.Client.Tests
             string path = WriteProfile(profile);
             try
             {
-                ConflictRules rules = SyncProfileReader.Load(path, new()).Single().Rules;
+                ConflictRules rules = new SyncProfileReader(new()).Load(path).Single().Rules;
                 Assert.That(rules.MissingOnClient, Is.EqualTo(SyncRule.Copy));
                 Assert.That(rules.DifferentFiles, Is.EqualTo(SyncRule.Skip));
                 Assert.That(rules.ClientOnlyFiles, Is.EqualTo(SyncRule.Keep));
@@ -47,8 +48,8 @@ namespace HwSync.Client.Tests
         /// </summary>
         [TestCase("MissingOnClient", "Coppy")]
         [TestCase("DifferentFiles", "Replace")]
-        [TestCase("ClientOnlyFiles", "Delete")]
-        [TestCase("ServerDeletions", "Delete")]
+        [TestCase("ClientOnlyFiles", "Unknown")]
+        [TestCase("ServerDeletions", "Unknown")]
         [TestCase("MissingOnClient", 0)]
         [TestCase("DifferentFiles", 0)]
         [TestCase("ClientOnlyFiles", 0)]
@@ -63,7 +64,7 @@ namespace HwSync.Client.Tests
             string path = WriteProfile(profile);
             try
             {
-                Assert.Throws<JsonException>(() => SyncProfileReader.Load(path, new()));
+                Assert.Throws<JsonException>(() => new SyncProfileReader(new()).Load(path));
             }
             finally
             {
@@ -76,7 +77,7 @@ namespace HwSync.Client.Tests
         /// </summary>
         [TestCase("MissingOnClient", "RecordOnly")]
         [TestCase("DifferentFiles", "Copy")]
-        [TestCase("ClientOnlyFiles", "Skip")]
+        [TestCase("ClientOnlyFiles", "RecordOnly")]
         [TestCase("ServerDeletions", "Keep")]
         public void Load_RejectsInvalidRuleCombination(string property, string value)
         {
@@ -88,13 +89,45 @@ namespace HwSync.Client.Tests
             string path = WriteProfile(profile);
             try
             {
-                Assert.Throws<InvalidDataException>(() => SyncProfileReader.Load(path, new()));
+                Assert.Throws<InvalidDataException>(() => new SyncProfileReader(new()).Load(path));
             }
             finally
             {
                 File.Delete(path);
             }
         }
+
+        /// <summary>
+        /// Загружает поддерживаемые действия автоматического плана из JSON.
+        /// </summary>
+        [TestCase("MissingOnClient", "Delete")]
+        [TestCase("MissingOnClient", "Skip")]
+        [TestCase("ClientOnlyFiles", "Copy")]
+        [TestCase("ClientOnlyFiles", "Delete")]
+        [TestCase("ClientOnlyFiles", "Skip")]
+        [TestCase("DifferentFiles", "Keep")]
+        public void Load_AcceptsAutomaticRules(string property, string value)
+        {
+            Dictionary<string, object> profile = CreateProfile();
+            profile["Rules"] = new Dictionary<string, object> { [property] = value };
+            string path = WriteProfile(profile);
+            try
+            {
+                ConflictRules rules = new SyncProfileReader(new()).Load(path).Single().Rules;
+                SyncRule actual = property switch
+                {
+                    "MissingOnClient" => rules.MissingOnClient,
+                    "ClientOnlyFiles" => rules.ClientOnlyFiles,
+                    _ => rules.DifferentFiles
+                };
+                Assert.That(actual, Is.EqualTo(Enum.Parse<SyncRule>(value)));
+            }
+            finally
+            {
+                File.Delete(path);
+            }
+        }
+
         /// <summary>
         /// Создаёт профиль с допустимыми абсолютными путями.
         /// </summary>

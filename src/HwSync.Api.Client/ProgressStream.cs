@@ -16,10 +16,15 @@ namespace HwSync.Api.Client
             _inner = inner;
             _progress = progress;
         }
+
         public override bool CanRead => _inner.CanRead;
+
         public override bool CanSeek => _inner.CanSeek;
+
         public override bool CanWrite => _inner.CanWrite;
+
         public override long Length => _inner.Length;
+
         public override long Position
         {
             get => _inner.Position;

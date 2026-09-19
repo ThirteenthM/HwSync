@@ -1,7 +1,8 @@
 using System.IO;
 using HwSync.Api.Client;
 using HwSync.Api.Contracts;
-using HwSync.Client.Windows.ViewModels;
+using HwSync.Client.Windows.Application.ViewModels;
+using HwSync.Client.Windows.Contract.ViewModels;
 using HwSync.Infrastructure.FileSystem;
 
 namespace HwSync.Client.Tests
@@ -21,7 +22,7 @@ namespace HwSync.Client.Tests
             string root = Path.Combine(TestContext.CurrentContext.WorkDirectory, "download-progress", Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(root);
             DownloadClient api = new();
-            using MainViewModel model = new(_ => api, new DirectorySnapshotProvider())
+            using MainViewModel model = new(_ => api, new DirectorySnapshotProvider(), new HwSync.Infrastructure.FileSystem.ComparedFileOperations(), new HwSync.Infrastructure.FileSystem.SourceFileReader(), new HwSync.Infrastructure.FileSystem.MissingFileSynchronizer(), new HwSync.Client.Windows.Application.SyncDecisionService())
             {
                 TransferMetricsEnabled = metricsEnabled,
                 ClientRootPath = root,
@@ -73,7 +74,7 @@ namespace HwSync.Client.Tests
             string root = Path.Combine(TestContext.CurrentContext.WorkDirectory, "download-progress", Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(root);
             DownloadClient api = new();
-            using MainViewModel model = new(_ => api, new DirectorySnapshotProvider())
+            using MainViewModel model = new(_ => api, new DirectorySnapshotProvider(), new HwSync.Infrastructure.FileSystem.ComparedFileOperations(), new HwSync.Infrastructure.FileSystem.SourceFileReader(), new HwSync.Infrastructure.FileSystem.MissingFileSynchronizer(), new HwSync.Client.Windows.Application.SyncDecisionService())
             {
                 ClientRootPath = root,
                 RootPath = Path.Combine(root, "server")
@@ -87,12 +88,16 @@ namespace HwSync.Client.Tests
             Assert.That(model.Status, Does.Contain("отменено"));
             Assert.That(Directory.GetFiles(root), Is.Empty);
         }
+
         /// <summary>
         /// Подставной сервер с тремя файлами для скачивания.
         /// </summary>
         private sealed class DownloadClient : IHwSyncApiClient, IFileDownloadClient
         {
-            public Action? OnDownload { get; set; }
+            public Action? OnDownload
+            {
+                get; set;
+            }
 
             /// <summary>
             /// Возвращает готовность тестового сервера.

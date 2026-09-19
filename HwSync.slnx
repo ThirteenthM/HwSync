@@ -4,7 +4,9 @@
         <Project Path="src/HwSync.Api.Client/HwSync.Api.Client.csproj" />
         <Project Path="src/HwSync.Api.Contracts/HwSync.Api.Contracts.csproj" />
         <Project Path="src/HwSync.Api/HwSync.Api.csproj" />
-        <Project Path="src/HwSync.Client.Windows/HwSync.Client.Windows.csproj" />
+        <Project Path="src/HwSync.Client.Windows.Host/HwSync.Client.Windows.Host.csproj" />
+        <Project Path="src/HwSync.Client.Windows.Contract/HwSync.Client.Windows.Contract.csproj" />
+        <Project Path="src/HwSync.Client.Windows.Application/HwSync.Client.Windows.Application.csproj" />
         <Project Path="src/HwSync.Core/HwSync.Core.csproj" />
         <Project Path="src/HwSync.Host/HwSync.Host.csproj" />
         <Project Path="src/HwSync.Infrastructure/HwSync.Infrastructure.csproj" />

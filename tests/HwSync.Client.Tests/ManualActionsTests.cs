@@ -1,7 +1,8 @@
 using System.IO;
 using HwSync.Api.Client;
 using HwSync.Api.Contracts;
-using HwSync.Client.Windows.ViewModels;
+using HwSync.Client.Windows.Application.ViewModels;
+using HwSync.Client.Windows.Contract.ViewModels;
 using HwSync.Infrastructure.FileSystem;
 
 namespace HwSync.Client.Tests
@@ -23,7 +24,7 @@ namespace HwSync.Client.Tests
             string path = Path.Combine(root, "local.txt");
             await File.WriteAllTextAsync(path, "client");
             ManualClient api = new();
-            using MainViewModel model = new(_ => api, new DirectorySnapshotProvider())
+            using MainViewModel model = new(_ => api, new DirectorySnapshotProvider(), new HwSync.Infrastructure.FileSystem.ComparedFileOperations(), new HwSync.Infrastructure.FileSystem.SourceFileReader(), new HwSync.Infrastructure.FileSystem.MissingFileSynchronizer(), new HwSync.Client.Windows.Application.SyncDecisionService())
             {
                 ClientRootPath = root,
                 RootPath = Path.Combine(root, "server"),
@@ -49,7 +50,7 @@ namespace HwSync.Client.Tests
             Directory.CreateDirectory(root);
             await File.WriteAllTextAsync(Path.Combine(root, "local.txt"), "client");
             ManualClient api = new();
-            using MainViewModel model = new(_ => api, new DirectorySnapshotProvider())
+            using MainViewModel model = new(_ => api, new DirectorySnapshotProvider(), new HwSync.Infrastructure.FileSystem.ComparedFileOperations(), new HwSync.Infrastructure.FileSystem.SourceFileReader(), new HwSync.Infrastructure.FileSystem.MissingFileSynchronizer(), new HwSync.Client.Windows.Application.SyncDecisionService())
             {
                 TransferMetricsEnabled = metricsEnabled,
                 ClientRootPath = root,
@@ -78,8 +79,15 @@ namespace HwSync.Client.Tests
         /// </summary>
         private sealed class ManualClient : IHwSyncApiClient, IFileMutationClient
         {
-            public int Verifications { get; private set; }
-            public string? Uploaded { get; private set; }
+            public int Verifications
+            {
+                get; private set;
+            }
+
+            public string? Uploaded
+            {
+                get; private set;
+            }
 
             /// <summary>
             /// Запрашивает готовность сервера.

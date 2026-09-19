@@ -1,3 +1,4 @@
+using HwSync.Abstractions.Models;
 using System.Net.Http;
 using HwSync.Api;
 using HwSync.Api.Client;

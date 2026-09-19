@@ -4,8 +4,9 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using HwSync.Api.Client;
 using HwSync.Api.Contracts;
-using HwSync.Client.Windows;
-using HwSync.Client.Windows.ViewModels;
+using HwSync.Client.Windows.Host;
+using HwSync.Client.Windows.Application.ViewModels;
+using HwSync.Client.Windows.Contract.ViewModels;
 
 namespace HwSync.Client.Tests
 {
@@ -21,12 +22,12 @@ namespace HwSync.Client.Tests
         [Apartment(ApartmentState.STA)]
         public async Task Window_CanLayoutResults()
         {
-            using MainViewModel model = new(address => new PreviewClient(), new StubSnapshotProvider())
+            using MainViewModel model = new(address => new PreviewClient(), new StubSnapshotProvider(), new HwSync.Infrastructure.FileSystem.ComparedFileOperations(), new HwSync.Infrastructure.FileSystem.SourceFileReader(), new HwSync.Infrastructure.FileSystem.MissingFileSynchronizer(), new HwSync.Client.Windows.Application.SyncDecisionService())
             {
                 ClientRootPath = @"D:\client-folder",
                 RootPath = @"D:\Data\Documents"
             };
-            model.LoadProfiles([new HwSync.Client.Windows.Configuration.SyncProfile
+            model.LoadProfiles([new HwSync.Client.Windows.Contract.Configuration.SyncProfile
 {
  Name = "Тестовый профиль", ServerRootPath = model.RootPath, ClientRootPath = model.ClientRootPath
 }]);

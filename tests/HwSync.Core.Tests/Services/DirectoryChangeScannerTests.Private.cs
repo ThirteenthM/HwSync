@@ -16,7 +16,10 @@ namespace HwSync.Core.Tests.Services
         /// </summary>
         private sealed class StubFileSnapshotProvider : IFileSnapshotProvider
         {
-            public IReadOnlyCollection<FileSnapshot> Snapshot { get; set; }
+            public IReadOnlyCollection<FileSnapshot> Snapshot
+            {
+                get; set;
+            }
 
             public List<string> RequestedRootPaths { get; } = [];
 

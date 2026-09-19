@@ -1,6 +1,8 @@
 using System.IO;
-using HwSync.Client.Windows.Configuration;
-using HwSync.Client.Windows.Diagnostics;
+using HwSync.Client.Windows.Application.Configuration;
+using HwSync.Client.Windows.Contract.Configuration;
+using HwSync.Client.Windows.Application.Diagnostics;
+using HwSync.Client.Windows.Contract.Diagnostics;
 
 namespace HwSync.Client.Tests
 {
@@ -22,13 +24,30 @@ namespace HwSync.Client.Tests
             metrics.Record("empty.bin", 0, TimeSpan.Zero, true, "Скопирован");
             metrics.Complete();
             Assert.That(metrics.ConfirmedBytes, Is.EqualTo(2097152));
-            Assert.That(metrics.Files[0].MebibytesPerSecond, Is.EqualTo(1));
+            Assert.That(metrics.Files[0].MegabytesPerSecond, Is.EqualTo(1.048576));
             Assert.That(metrics.Files[1].ConfirmedBytes, Is.Zero);
             Assert.That(metrics.Files[2].ConfirmedBytes, Is.Zero);
-            Assert.That(metrics.Files[3].MebibytesPerSecond, Is.Zero);
+            Assert.That(metrics.Files[3].MegabytesPerSecond, Is.Zero);
+            Assert.That(metrics.MegabytesPerSecond, Is.EqualTo(2.097152 / metrics.Duration.TotalSeconds).Within(0.000001));
             TimeSpan duration = metrics.Duration;
             Assert.That(metrics.Duration, Is.EqualTo(duration));
             Assert.That(metrics.Describe(), Does.Contain("файлов 2"));
+        }
+
+        /// <summary>
+        /// Проверяет десятичные мегабайты, дробное время и нулевую длительность.
+        /// </summary>
+        [TestCase(2500000L, 0.5, 5)]
+        [TestCase(1000000L, 2, 0.5)]
+        [TestCase(5000000000L, 10, 500)]
+        [TestCase(0L, 1, 0)]
+        [TestCase(1000000L, 0, 0)]
+        public void Measurement_CalculatesMegabytesPerSecond(long bytes, double seconds, double expected)
+        {
+            FileTransferMeasurement measurement = new("file.bin", bytes, TimeSpan.FromSeconds(seconds), "Скопирован");
+            Assert.That(measurement.MegabytesPerSecond, Is.EqualTo(expected));
+            Assert.That(measurement.Volume, Is.EqualTo($"{bytes / 1_000_000d:F2} МБ"));
+            Assert.That(measurement.Speed, Is.EqualTo(bytes > 0 ? $"{expected:F2} МБ/с" : "—"));
         }
 
         /// <summary>
@@ -43,7 +62,7 @@ namespace HwSync.Client.Tests
             File.WriteAllText(path, json);
             try
             {
-                Assert.That(ClientSettingsReader.Load(path, ClientSettingsReader.GetOptions()).TransferMetricsEnabled, Is.EqualTo(expected));
+                Assert.That(new ClientSettingsReader().Load(path).TransferMetricsEnabled, Is.EqualTo(expected));
             }
             finally
             {

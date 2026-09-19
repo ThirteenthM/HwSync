@@ -6,6 +6,7 @@ namespace HwSync.Abstractions.Models
     public sealed record ReconciliationRules
     {
         public ContentConflictPolicy ContentConflict { get; init; } = ContentConflictPolicy.KeepBoth;
+
         public DeletionConflictPolicy DeletionConflict { get; init; } = DeletionConflictPolicy.AskUser;
     }
 }

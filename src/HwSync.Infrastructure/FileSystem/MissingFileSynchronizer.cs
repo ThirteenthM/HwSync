@@ -1,3 +1,4 @@
+using HwSync.Abstractions.FileSystem;
 using HwSync.Abstractions.Models;
 
 namespace HwSync.Infrastructure.FileSystem
@@ -5,7 +6,7 @@ namespace HwSync.Infrastructure.FileSystem
     /// <summary>
     /// Последовательное копирование отсутствующих файлов через временные файлы.
     /// </summary>
-    public sealed class MissingFileSynchronizer
+    public sealed class MissingFileSynchronizer : IMissingFileSynchronizer
     {
         /// <summary>
         /// Копирует файлы без перезаписи и удаляет незавершённые временные файлы.

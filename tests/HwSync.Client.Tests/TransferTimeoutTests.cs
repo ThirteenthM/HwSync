@@ -2,7 +2,8 @@ using System.IO;
 using System.Net;
 using System.Net.Http;
 using HwSync.Api.Client;
-using HwSync.Client.Windows.Configuration;
+using HwSync.Client.Windows.Application.Configuration;
+using HwSync.Client.Windows.Contract.Configuration;
 
 namespace HwSync.Client.Tests
 {
@@ -74,7 +75,7 @@ namespace HwSync.Client.Tests
             File.WriteAllText(path, json);
             try
             {
-                Assert.That(ClientSettingsReader.Load(path, ClientSettingsReader.GetOptions()).FileTransferTimeoutSeconds, Is.EqualTo(expected));
+                Assert.That(new ClientSettingsReader().Load(path).FileTransferTimeoutSeconds, Is.EqualTo(expected));
             }
             finally
             {
@@ -94,7 +95,7 @@ namespace HwSync.Client.Tests
             File.WriteAllText(path, "{\"FileTransferTimeoutSeconds\":" + value + "}");
             try
             {
-                Assert.Throws<InvalidDataException>(() => ClientSettingsReader.Load(path, ClientSettingsReader.GetOptions()));
+                Assert.Throws<InvalidDataException>(() => new ClientSettingsReader().Load(path));
             }
             finally
             {

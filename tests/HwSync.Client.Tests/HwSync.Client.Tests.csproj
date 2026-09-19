@@ -20,5 +20,5 @@
     <Using Include="NUnit.Framework" />
   </ItemGroup>
 
-  <ItemGroup><ProjectReference Include="../../src/HwSync.Client.Windows/HwSync.Client.Windows.csproj" /></ItemGroup>
+  <ItemGroup><ProjectReference Include="../../src/HwSync.Client.Windows.Host/HwSync.Client.Windows.Host.csproj" /></ItemGroup>
 </Project>

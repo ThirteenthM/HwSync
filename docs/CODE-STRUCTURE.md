@@ -9,14 +9,17 @@
 - HwSync.Api — тонкие контроллеры и обработчики запросов.
 - HwSync.Host — запуск сервера, DI, конфигурация и фоновый обработчик очереди.
 - HwSync.Api.Client — HTTP-клиент и контроль прогресса передачи.
-- HwSync.Client.Windows — WPF-форма, настройки и команды пользователя.
+- HwSync.Client.Windows.Host — WPF-окна, запуск и получение служб через DI.
+- HwSync.Client.Windows.Contract — настройки, перечисления, данные и интерфейсы Windows-клиента.
+- HwSync.Client.Windows.Application — реализации загрузчиков, модели представления, метрики и регистрация служб.
 
 ## Модель формы
 
-MainViewModel остаётся одним типом, разделённым на три файла:
+MainViewModel находится в HwSync.Client.Windows.Application и остаётся одним типом, разделённым по обязанностям:
 - MainViewModel.cs — состояние, команды, профили, отмена и общая обработка ошибок.
 - MainViewModel.Comparison.cs — подключение, запуск сравнения и опрос задания.
 - MainViewModel.Transfers.cs — копирование и ручное удаление файлов.
+- MainViewModel.Metrics.cs — отключаемые измерения копирования.
 
 ManualFileOperation задаёт действие клиента, FileMutationOperation — обработчика сервера. Вместо строк используются перечисления; маршруты и JSON-контракты остались прежними.
 
@@ -31,3 +34,13 @@ ReconciliationPlanner — отдельная подготовленная час
 Перед каждым объявленным типом, конструктором и методом находится краткий XML-summary. Дополнительные теги нужны только для неочевидной информации. Это правило действует и для внутренних помощников и тестов.
 
 Скобки и содержимое блоков размещаются на отдельных строках. Параметры форматирования закреплены в .editorconfig. Для применения используется dotnet format whitespace HwSync.slnx. Локальные переменные сохраняют явные типы, зависимости — интерфейсные типы.
+
+## Зависимости Windows-клиента
+
+Host обращается к модели через IMainViewModel из Contract. При запуске вызывается AddWindowsClientApplication, затем контейнер создаёт окно и его зависимости. В Host нет конструирования загрузчиков, HTTP-клиентов и файловых служб.
+
+Application ссылается на Contract, Api.Client и Infrastructure. Contract ссылается только на общие модели Abstractions; WPF и CommunityToolkit.Mvvm ему не нужны. Оба проекта библиотек используют net10.0, WPF включён только в Host.
+
+Загрузчики зарегистрированы как IConfigurationReader<T>. Конфигурация и модель живут в контейнере до закрытия приложения. Файловые зависимости MainViewModel передаются через IFileSnapshotProvider, IComparedFileOperations, ISourceFileReader и IMissingFileSynchronizer. Общий FileCopyResult находится в Abstractions.Models.
+
+appsettings.json и sync-profiles.json остались рядом с запускаемым exe и исходниками Host. Файлы конфигурации и имена параметров не изменились.

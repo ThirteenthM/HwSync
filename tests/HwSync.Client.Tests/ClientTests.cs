@@ -3,7 +3,8 @@ using System.Net.Http;
 using System.Text;
 using HwSync.Api.Client;
 using HwSync.Api.Contracts;
-using HwSync.Client.Windows.ViewModels;
+using HwSync.Client.Windows.Application.ViewModels;
+using HwSync.Client.Windows.Contract.ViewModels;
 
 namespace HwSync.Client.Tests
 {
@@ -74,7 +75,7 @@ namespace HwSync.Client.Tests
         public async Task PollFailure_CanResumeWithoutStartingDuplicateJob()
         {
             StubClient client = new();
-            using MainViewModel model = new(address => client, new StubSnapshotProvider())
+            using MainViewModel model = new(address => client, new StubSnapshotProvider(), new HwSync.Infrastructure.FileSystem.ComparedFileOperations(), new HwSync.Infrastructure.FileSystem.SourceFileReader(), new HwSync.Infrastructure.FileSystem.MissingFileSynchronizer(), new HwSync.Client.Windows.Application.SyncDecisionService())
             {
                 ClientRootPath = @"D:\client-folder",
                 RootPath = @"D:\server-folder"
@@ -97,7 +98,7 @@ namespace HwSync.Client.Tests
         public async Task Cancel_SendsRequestToServer()
         {
             StubClient client = new();
-            using MainViewModel model = new(address => client, new StubSnapshotProvider())
+            using MainViewModel model = new(address => client, new StubSnapshotProvider(), new HwSync.Infrastructure.FileSystem.ComparedFileOperations(), new HwSync.Infrastructure.FileSystem.SourceFileReader(), new HwSync.Infrastructure.FileSystem.MissingFileSynchronizer(), new HwSync.Client.Windows.Application.SyncDecisionService())
             {
                 ClientRootPath = @"D:\client-folder",
                 RootPath = @"D:\server-folder"
@@ -116,7 +117,7 @@ namespace HwSync.Client.Tests
         public async Task MissingLocalFolder_DoesNotSendServerRequest()
         {
             StubClient client = new();
-            using MainViewModel model = new(address => client, new HwSync.Infrastructure.FileSystem.DirectorySnapshotProvider())
+            using MainViewModel model = new(address => client, new HwSync.Infrastructure.FileSystem.DirectorySnapshotProvider(), new HwSync.Infrastructure.FileSystem.ComparedFileOperations(), new HwSync.Infrastructure.FileSystem.SourceFileReader(), new HwSync.Infrastructure.FileSystem.MissingFileSynchronizer(), new HwSync.Client.Windows.Application.SyncDecisionService())
             {
                 ClientRootPath = System.IO.Path.Combine(System.IO.Path.GetTempPath(), Guid.NewGuid().ToString()),
                 RootPath = @"D:\server-folder"
@@ -158,9 +159,18 @@ namespace HwSync.Client.Tests
         private sealed class StubClient : IHwSyncApiClient
         {
             private readonly Guid _id = Guid.NewGuid();
+
             public bool FailPoll { get; set; } = true;
-            public int Starts { get; private set; }
-            public int Cancels { get; private set; }
+
+            public int Starts
+            {
+                get; private set;
+            }
+
+            public int Cancels
+            {
+                get; private set;
+            }
 
             /// <summary>
             /// Запрашивает готовность сервера.
