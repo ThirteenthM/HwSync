@@ -40,6 +40,19 @@ namespace HwSync.Client.Windows.Application.ViewModels
                 return;
             }
 
+            string? duplicatePath = Changes.GroupBy(row => row.Path, StringComparer.Ordinal)
+                .FirstOrDefault(group => group.Skip(1).Any())?.Key
+                ?? comparison.Changes.GroupBy(change => change.Current?.RelativePath ?? change.Previous?.RelativePath ?? "", StringComparer.Ordinal)
+                    .FirstOrDefault(group => group.Skip(1).Any())?.Key;
+            if (duplicatePath is not null)
+            {
+                _completedComparison = null;
+                Status = "План неоднозначен. Повторите сравнение.";
+                Error = $"Путь повторяется в плане: {duplicatePath}. Файлы не изменены.";
+                RefreshCommands();
+                return;
+            }
+
             Dictionary<string, FileSyncDecision> decisionsByPath = Changes.ToDictionary(
                 row => row.Path, row => row.Action, StringComparer.Ordinal);
             (FileChangeDto Change, FileSyncDecision Action)[] plan = comparison.Changes
@@ -70,6 +83,7 @@ namespace HwSync.Client.Windows.Application.ViewModels
                 BeginTransferMetrics("Автосинхронизация", plan.Any(item =>
                     item.Action is FileSyncDecision.CopyToClient or FileSyncDecision.CopyToServer));
                 int completed = 0;
+                int alreadyExists = 0;
                 try
                 {
                     foreach ((FileChangeDto change, FileSyncDecision action) in plan)
@@ -77,16 +91,22 @@ namespace HwSync.Client.Windows.Application.ViewModels
                         cancellation.Token.ThrowIfCancellationRequested();
                         FileSnapshotDto snapshot = (change.Current ?? change.Previous)!;
                         FileSnapshot file = new(snapshot.RelativePath, snapshot.Size, snapshot.LastWriteTimeUtc);
-                        Status = $"Автосинхронизация {completed + 1} из {plan.Length}: {file.RelativePath}";
-                        await ApplyPlannedActionAsync(comparison.Id, file, action, cancellation.Token);
-                        completed++;
+                        Status = $"Автосинхронизация {completed + alreadyExists + 1} из {plan.Length}: {file.RelativePath}";
+                        if (await ApplyPlannedActionAsync(comparison.Id, file, action, cancellation.Token))
+                        {
+                            completed++;
+                        }
+                        else
+                        {
+                            alreadyExists++;
+                        }
                     }
 
-                    Status = $"Выполнено: {completed}. Требуют решения: {unresolved}. Оставлено по правилам: {skipped}. Повторите сравнение.";
+                    Status = $"Выполнено: {completed}. Уже существуют: {alreadyExists}. Требуют решения: {unresolved}. Оставлено по правилам: {skipped}. Повторите сравнение.";
                 }
                 catch (Exception exception)
                 {
-                    Status = $"Автосинхронизация остановлена. Выполнено: {completed} из {plan.Length}. Повторите сравнение.";
+                    Status = $"Автосинхронизация остановлена. Выполнено: {completed} из {plan.Length}. Уже существуют: {alreadyExists}. Повторите сравнение.";
                     Error = exception is OperationCanceledException
                         ? "Уже выполненные действия сохранены. Результат последнего запроса проверьте сравнением."
                         : DescribeError(exception);
@@ -103,7 +123,7 @@ namespace HwSync.Client.Windows.Application.ViewModels
         /// <summary>
         /// Выполняет одно решение с проверками актуальности файлов.
         /// </summary>
-        private async Task ApplyPlannedActionAsync(Guid comparisonId, FileSnapshot file, FileSyncDecision action, CancellationToken token)
+        private async Task<bool> ApplyPlannedActionAsync(Guid comparisonId, FileSnapshot file, FileSyncDecision action, CancellationToken token)
         {
             switch (action)
             {
@@ -114,6 +134,11 @@ namespace HwSync.Client.Windows.Application.ViewModels
                             (snapshot, stream, cancellation) => downloader.DownloadFileAsync(
                                 comparisonId, snapshot.RelativePath, stream, cancellation), token),
                         copied => copied.Single().Copied);
+                    if (results.Single().AlreadyExists)
+                    {
+                        return false;
+                    }
+
                     if (!results.Single().Copied)
                     {
                         throw new IOException($"{file.RelativePath}: {results.Single().Error}");
@@ -137,7 +162,11 @@ namespace HwSync.Client.Windows.Application.ViewModels
                     token.ThrowIfCancellationRequested();
                     _fileOperations.DeleteUnchanged(_comparedClientRoot, file);
                     break;
+                default:
+                    return false;
             }
+
+            return true;
         }
     }
 }

@@ -23,7 +23,7 @@ namespace HwSync.Infrastructure.FileSystem
                     string target = SafeFilePath.Resolve(clientRoot, file.RelativePath);
                     if (File.Exists(target) || Directory.Exists(target))
                     {
-                        results.Add(new(file.RelativePath, false, "Файл уже существует; сохранён без изменений."));
+                        results.Add(new(file.RelativePath, false, "Файл уже существует; сохранён без изменений.") { AlreadyExists = true });
                         continue;
                     }
 
@@ -44,7 +44,15 @@ namespace HwSync.Infrastructure.FileSystem
                     cancellationToken.ThrowIfCancellationRequested();
                     File.SetLastWriteTimeUtc(temporary, file.LastWriteTimeUtc);
                     SafeFilePath.Resolve(clientRoot, file.RelativePath);
-                    File.Move(temporary, target, false);
+                    try
+                    {
+                        File.Move(temporary, target, false);
+                    }
+                    catch (IOException) when (File.Exists(target) || Directory.Exists(target))
+                    {
+                        results.Add(new(file.RelativePath, false, "Файл уже существует; сохранён без изменений.") { AlreadyExists = true });
+                        continue;
+                    }
                     temporary = null;
                     results.Add(new(file.RelativePath, true, null));
                 }
@@ -60,7 +68,15 @@ namespace HwSync.Infrastructure.FileSystem
                 {
                     if (temporary is not null && File.Exists(temporary))
                     {
-                        File.Delete(temporary);
+                        try
+                        {
+                            File.Delete(temporary);
+                        }
+                        catch (Exception cleanupError) when (cleanupError is IOException or UnauthorizedAccessException)
+                        {
+                            System.Diagnostics.Trace.TraceWarning(
+                                "Не удалось удалить временный файл {0}: {1}", temporary, cleanupError.Message);
+                        }
                     }
                 }
             }

@@ -97,6 +97,90 @@ namespace HwSync.Client.Tests
         }
 
         /// <summary>
+        /// Пропускает занятый путь до или во время передачи и продолжает остальные действия.
+        /// </summary>
+        [TestCase(false, SyncRule.Copy)]
+        [TestCase(true, SyncRule.Copy)]
+        [TestCase(false, SyncRule.Delete)]
+        [TestCase(true, SyncRule.Delete)]
+        public async Task AutoSync_ExistingTargetDoesNotStopPlan(bool duringDownload, SyncRule nextRule)
+        {
+            string root = CreateDirectory();
+            string target = Path.Combine(root, "server.txt");
+            TestClient api = new();
+            using MainViewModel model = CreateModel(root, api, new() { ClientOnlyFiles = nextRule });
+            model.ConfirmDeletion = (_, _) => true;
+            await model.StartCommand.ExecuteAsync(null);
+            if (duringDownload)
+            {
+                api.OnDownload = () => File.WriteAllText(target, "concurrent file");
+            }
+            else
+            {
+                File.WriteAllText(target, "concurrent file");
+            }
+
+            await model.AutoSyncCommand.ExecuteAsync(null);
+
+            Assert.That(File.ReadAllText(target), Is.EqualTo("concurrent file"));
+            Assert.That(api.Uploaded, Is.EqualTo(nextRule == SyncRule.Copy ? "client" : null));
+            Assert.That(File.Exists(Path.Combine(root, "client.txt")), Is.EqualTo(nextRule != SyncRule.Delete));
+            Assert.That(model.Error, Is.Empty);
+            Assert.That(model.Status, Does.Contain("Выполнено: 1").And.Contain("Уже существуют: 1"));
+            Assert.That(model.TransferMetrics!.Files[0].ConfirmedBytes, Is.Zero);
+            Assert.That(Directory.GetFiles(root, ".hwsync-*.tmp"), Is.Empty);
+        }
+
+        /// <summary>
+        /// Ошибка передачи остаётся причиной остановки и не маскируется пропуском.
+        /// </summary>
+        [Test]
+        public async Task AutoSync_DownloadErrorStopsPlan()
+        {
+            string root = CreateDirectory();
+            TestClient api = new() { OnDownload = () => throw new IOException("Download failed") };
+            using MainViewModel model = CreateModel(root, api, new() { ClientOnlyFiles = SyncRule.Copy });
+            await model.StartCommand.ExecuteAsync(null);
+
+            await model.AutoSyncCommand.ExecuteAsync(null);
+
+            Assert.That(api.Uploaded, Is.Null);
+            Assert.That(model.Error, Does.Contain("Download failed"));
+            Assert.That(File.Exists(Path.Combine(root, "server.txt")), Is.False);
+            Assert.That(Directory.GetFiles(root, ".hwsync-*.tmp"), Is.Empty);
+        }
+
+        /// <summary>
+        /// Отклоняет повторяющийся путь до подтверждений и файловых операций.
+        /// </summary>
+        [TestCase(false)]
+        [TestCase(true)]
+        public async Task AutoSync_RejectsDuplicatePaths(bool conflictingDecisions)
+        {
+            string root = CreateDirectory();
+            TestClient api = new();
+            using MainViewModel model = CreateModel(root, api, new() { ClientOnlyFiles = SyncRule.Copy });
+            await model.StartCommand.ExecuteAsync(null);
+            ChangeRow first = model.Changes.First();
+            ChangeRow duplicate = first with
+            {
+                Action = conflictingDecisions ? FileSyncDecision.DeleteOnServer : first.Action
+            };
+            typeof(MainViewModel).GetProperty(nameof(MainViewModel.Changes))!
+                .SetValue(model, model.Changes.Append(duplicate).ToArray());
+            model.ConfirmDeletion = (_, _) => throw new AssertionException("Подтверждение не должно запрашиваться");
+
+            await model.AutoSyncCommand.ExecuteAsync(null);
+
+            Assert.That(api.Downloads, Is.Zero);
+            Assert.That(api.Uploaded, Is.Null);
+            Assert.That(api.Deletions, Is.Zero);
+            Assert.That(model.Error, Does.Contain(first.Path).And.Contain("повторяется"));
+            Assert.That(model.AutoSyncCommand.CanExecute(null), Is.False);
+            Assert.That(File.ReadAllText(Path.Combine(root, "client.txt")), Is.EqualTo("client"));
+        }
+
+        /// <summary>
         /// Требует подтверждение и проверяет обе стороны перед удалением.
         /// </summary>
         [TestCase(false)]
@@ -212,6 +296,8 @@ namespace HwSync.Client.Tests
         {
             public string? Uploaded { get; private set; }
 
+            public Action? OnDownload { get; set; }
+
             public int Downloads { get; private set; }
 
             public int Deletions { get; private set; }
@@ -257,6 +343,7 @@ namespace HwSync.Client.Tests
             public async Task DownloadFileAsync(Guid jobId, string relativePath, Stream target, CancellationToken token)
             {
                 Downloads++;
+                OnDownload?.Invoke();
                 Started.TrySetResult();
                 if (WaitForCancellation)
                 {
