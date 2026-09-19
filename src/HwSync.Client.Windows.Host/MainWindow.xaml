@@ -17,8 +17,11 @@
     </Window.Resources>
     <Grid Margin="28" Background="#F3F5F8">
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/><RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <StackPanel Margin="0,0,0,20">
             <ComboBox ItemsSource="{Binding Profiles}" SelectedItem="{Binding SelectedProfile}" DisplayMemberPath="Name" IsEnabled="{Binding CanEditConnection}" Margin="0,0,0,8" AutomationProperties.Name="Профиль папки"/>
@@ -27,11 +30,22 @@
         </StackPanel>
         <Border Grid.Row="1" Background="White" CornerRadius="8" Padding="20" Margin="0,0,0,16">
             <Grid>
-                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
                 <TextBlock Text="Адрес сервера" Margin="0,0,0,6"/>
                 <TextBox Grid.Row="1" Text="{Binding ServerAddress, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding CanEditConnection}" AutomationProperties.Name="Адрес сервера" />
-                <Button Grid.Row="1" Grid.Column="1" Content="Проверить связь" Command="{Binding ConnectCommand}" Margin="12,0,0,0" Click="Button_Click"/>
+                <Button Grid.Row="1" Grid.Column="1" Content="Проверить связь" Command="{Binding ConnectCommand}" Margin="12,0,0,0"/>
                 <TextBlock Grid.Row="2" Text="Каталог на сервере (абсолютный путь)" Margin="0,14,0,6"/>
                 <TextBox Grid.Row="3" Grid.ColumnSpan="2" Text="{Binding RootPath, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding CanEditConnection}" AutomationProperties.Name="Каталог на сервере" />
                 <TextBlock Grid.Row="4" Text="Каталог на клиенте (абсолютный путь)" Margin="0,14,0,6"/>
@@ -47,20 +61,20 @@
                 <Button Content="Продолжить опрос" Command="{Binding ResumeCommand}"/>
             </WrapPanel>
             <Expander Header="Ручные действия" Margin="0,0,0,8">
-            <UniformGrid Columns="2" Margin="0,8,0,0">
-                <Button Command="{Binding CopyCommand}" Margin="0,0,8,8">
-                    <TextBlock Text="Копировать отсутствующие на клиенте (взять на сервере)" TextWrapping="Wrap"/>
-                </Button>
-                <Button Command="{Binding UploadCommand}" Margin="0,0,0,8">
-                    <TextBlock Text="Копировать отсутствующие на сервере (от клиента)" TextWrapping="Wrap"/>
-                </Button>
-                <Button Command="{Binding DeleteServerCommand}" Margin="0,0,8,8">
-                    <TextBlock Text="Удалить на сервере файлы, которых нет на клиенте" TextWrapping="Wrap"/>
-                </Button>
-                <Button Command="{Binding DeleteClientCommand}" Margin="0,0,0,8">
-                    <TextBlock Text="Удалить на клиенте файлы, которых нет на сервере" TextWrapping="Wrap"/>
-                </Button>
-            </UniformGrid>
+                <UniformGrid Columns="2" Margin="0,8,0,0">
+                    <Button Command="{Binding CopyCommand}" Margin="0,0,8,8">
+                        <TextBlock Text="Копировать отсутствующие на клиенте (взять на сервере)" TextWrapping="Wrap"/>
+                    </Button>
+                    <Button Command="{Binding UploadCommand}" Margin="0,0,0,8">
+                        <TextBlock Text="Копировать отсутствующие на сервере (от клиента)" TextWrapping="Wrap"/>
+                    </Button>
+                    <Button Command="{Binding DeleteServerCommand}" Margin="0,0,8,8">
+                        <TextBlock Text="Удалить на сервере файлы, которых нет на клиенте" TextWrapping="Wrap"/>
+                    </Button>
+                    <Button Command="{Binding DeleteClientCommand}" Margin="0,0,0,8">
+                        <TextBlock Text="Удалить на клиенте файлы, которых нет на сервере" TextWrapping="Wrap"/>
+                    </Button>
+                </UniformGrid>
             </Expander>
             <TextBlock Text="{Binding Status}" FontSize="17" FontWeight="SemiBold" TextWrapping="Wrap"/>
             <TextBox Text="{Binding JobId, Mode=OneWay}" IsReadOnly="True" BorderThickness="0" Background="Transparent" Padding="0,4" Foreground="#58697B" AutomationProperties.Name="Идентификатор задания"/>

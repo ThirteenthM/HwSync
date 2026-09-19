@@ -40,8 +40,12 @@ namespace HwSync.Client.Windows.Application.ViewModels
                 return;
             }
 
+            Dictionary<string, FileSyncDecision> decisionsByPath = Changes.ToDictionary(
+                row => row.Path, row => row.Action, StringComparer.Ordinal);
             (FileChangeDto Change, FileSyncDecision Action)[] plan = comparison.Changes
-                .Zip(Changes, (change, row) => (Change: change, Action: row.Action))
+                .Select(change => (Change: change, Action: decisionsByPath.GetValueOrDefault(
+                    change.Current?.RelativePath ?? change.Previous?.RelativePath ?? "",
+                    FileSyncDecision.AskUser)))
                 .Where(item => IsExecutable(item.Action)).ToArray();
             int unresolved = Changes.Count(row => row.Action == FileSyncDecision.AskUser);
             int skipped = Changes.Count(row => row.Action == FileSyncDecision.Skip);

@@ -58,6 +58,32 @@ namespace HwSync.Client.Tests
         }
 
         /// <summary>
+        /// Сохраняет связь действия с файлом при перестановке и фильтрации строк.
+        /// </summary>
+        [TestCase(false)]
+        [TestCase(true)]
+        public async Task AutoSync_MatchesDecisionsByPath(bool filterServerFile)
+        {
+            string root = CreateDirectory();
+            TestClient api = new();
+            using MainViewModel model = CreateModel(root, api, new() { ClientOnlyFiles = SyncRule.Copy });
+            await model.StartCommand.ExecuteAsync(null);
+            ChangeRow[] rows = model.Changes.Reverse()
+                .Where(row => !filterServerFile || row.Path != "server.txt").ToArray();
+            // Имитируем замену списка будущей сортировкой или фильтром формы.
+            typeof(MainViewModel).GetProperty(nameof(MainViewModel.Changes))!.SetValue(model, rows);
+
+            await model.AutoSyncCommand.ExecuteAsync(null);
+
+            Assert.That(api.Uploaded, Is.EqualTo("client"));
+            Assert.That(api.Downloads, Is.EqualTo(filterServerFile ? 0 : 1));
+            Assert.That(File.Exists(Path.Combine(root, "server.txt")), Is.EqualTo(!filterServerFile));
+            Assert.That(File.ReadAllText(Path.Combine(root, "conflict.txt")), Is.EqualTo("local conflict"));
+            Assert.That(model.Error, Is.Empty);
+            Assert.That(model.Status, Does.Contain(filterServerFile ? "Выполнено: 1" : "Выполнено: 2"));
+        }
+
+        /// <summary>
         /// Требует подтверждение и проверяет обе стороны перед удалением.
         /// </summary>
         [TestCase(false)]

@@ -92,13 +92,5 @@ namespace HwSync.Client.Windows.Host
             }
             base.OnClosing(e);
         }
-
-        /// <summary>
-        /// Обрабатывает нажатие без дополнительных действий.
-        /// </summary>
-        private void Button_Click(object sender, RoutedEventArgs e)
-        {
-
-        }
     }
 }
