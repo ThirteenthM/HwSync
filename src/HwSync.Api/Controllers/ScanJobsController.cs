@@ -22,6 +22,21 @@ namespace HwSync.Api.Controllers
         }
 
         /// <summary>
+        /// Передаёт выбранную клиентскую версию для замены серверной.
+        /// </summary>
+        [HttpPut("{id:guid}/conflict/replace")]
+        [DisableRequestSizeLimit]
+        public Task<IActionResult> ReplaceConflict(Guid id, string relativePath, [FromServices] ConflictFileHandler handler) =>
+            handler.ExecuteAsync(id, relativePath, false, Request.Body, HttpContext.RequestAborted);
+
+        /// <summary>
+        /// Сохраняет обе версии, принимая клиентскую под отдельным именем.
+        /// </summary>
+        [HttpPut("{id:guid}/conflict/preserve")]
+        [DisableRequestSizeLimit]
+        public Task<IActionResult> PreserveConflict(Guid id, string relativePath, [FromServices] ConflictFileHandler handler) =>
+            handler.ExecuteAsync(id, relativePath, true, Request.Body, HttpContext.RequestAborted);
+        /// <summary>
         /// Передаёт поток запроса обработчику загрузки файла.
         /// </summary>
         [HttpPut("{id:guid}/file")]

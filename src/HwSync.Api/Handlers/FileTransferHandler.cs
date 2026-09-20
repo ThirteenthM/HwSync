@@ -77,7 +77,7 @@ namespace HwSync.Api.Handlers
                 return new ConflictResult();
             }
             return _history.GetDeletedFiles(job.SourceRootPath).Select(file => new DeletedFileDto(
-                file.RelativePath, file.Deleted, file.DeletedAtUtc, file.ChangeNumber)).ToArray();
+                file.RelativePath, file.Deleted, file.DeletedAtUtc, file.ChangeNumber, new(file.PreviousFile.RelativePath, file.PreviousFile.Size, file.PreviousFile.LastWriteTimeUtc))).ToArray();
         }
     }
 }

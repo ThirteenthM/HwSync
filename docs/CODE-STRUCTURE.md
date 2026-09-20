@@ -7,15 +7,17 @@
 - HwSync.Infrastructure — чтение файлов, безопасные пути, копирование и JSON-хранилища.
 - HwSync.Api.Contracts — типы запросов и ответов, пригодные для отдельного NuGet-пакета.
 - HwSync.Api — тонкие контроллеры и обработчики запросов.
-- HwSync.Host — запуск сервера, DI, конфигурация и фоновый обработчик очереди.
+- HwSync.Windows.Server.Host — Windows-запуск сервера, параметры консоли/службы и настройки окружения.
+- HwSync.Server.AppServices — общая регистрация серверных служб, запуск миграций и фоновый обработчик очереди.
 - HwSync.Api.Client — HTTP-клиент и контроль прогресса передачи.
-- HwSync.Client.Windows.Host — WPF-окна, запуск и получение служб через DI.
-- HwSync.Client.Windows.Contract — настройки, перечисления, данные и интерфейсы Windows-клиента.
-- HwSync.Client.Windows.Application — реализации загрузчиков, модели представления, метрики и регистрация служб.
+- HwSync.Windows.Client.Host — WPF-окна клиента синхронизации, запуск и получение служб через DI.
+- HwSync.Windows.Admin.Host — отдельное WPF-приложение просмотра настроек сервера и похоронной книги.
+- HwSync.Windows.Contract — контракты клиента синхронизации и утилиты управления, разделённые на Common, Client и Administration.
+- HwSync.Windows.AppServices — реализации загрузчиков, модели представления, метрики и регистрация служб.
 
 ## Модель формы
 
-MainViewModel находится в HwSync.Client.Windows.Application и остаётся одним типом, разделённым по обязанностям:
+MainViewModel находится в HwSync.Windows.AppServices и остаётся одним типом, разделённым по обязанностям:
 - MainViewModel.cs — состояние, команды, профили, отмена и общая обработка ошибок.
 - MainViewModel.Comparison.cs — подключение, запуск сравнения и опрос задания.
 - MainViewModel.Transfers.cs — копирование и ручное удаление файлов.
@@ -39,8 +41,22 @@ ReconciliationPlanner — отдельная подготовленная час
 
 Host обращается к модели через IMainViewModel из Contract. При запуске вызывается AddWindowsClientApplication, затем контейнер создаёт окно и его зависимости. В Host нет конструирования загрузчиков, HTTP-клиентов и файловых служб.
 
-Application ссылается на Contract, Api.Client и Infrastructure. Contract ссылается только на общие модели Abstractions; WPF и CommunityToolkit.Mvvm ему не нужны. Оба проекта библиотек используют net10.0, WPF включён только в Host.
+AppServices ссылается на Contract, Api.Client и Infrastructure. Contract ссылается только на общие модели Abstractions; WPF и CommunityToolkit.Mvvm ему не нужны. Оба проекта библиотек используют net10.0, WPF включён только в Host.
 
 Загрузчики зарегистрированы как IConfigurationReader<T>. Конфигурация и модель живут в контейнере до закрытия приложения. Файловые зависимости MainViewModel передаются через IFileSnapshotProvider, IComparedFileOperations, ISourceFileReader и IMissingFileSynchronizer. Общий FileCopyResult находится в Abstractions.Models.
 
 appsettings.json и sync-profiles.json остались рядом с запускаемым exe и исходниками Host. Файлы конфигурации и имена параметров не изменились.
+## Хранение SQLite
+
+HwSync.Persistence.Sqlite реализует существующие интерфейсы хранения снимков, событий удаления и подтверждённых состояний. HwSync.Persistence.Sqlite.Migrations содержит версии схемы и транзакционное обновление базы. Оба Host используют SQLite через DI. Сервер применяет миграции в SqliteStartupService до обработки заданий; клиент — в ClientStorageBootstrap.Initialize до открытия окна. Тестовая JSON-история не переносится.
+
+Порядок подключения и развития схемы описан в SQLITE-STORAGE.md.
+
+## Общие библиотеки Windows-приложений
+
+Windows-часть состоит из HwSync.Windows.Contract, HwSync.Windows.AppServices и двух точек запуска:
+HwSync.Windows.Client.Host и HwSync.Windows.Admin.Host.
+В общих библиотеках код разделён по назначению: Common, Client, Administration.
+Пользователь управления и участник синхронизации — разные сущности.
+Common/Configuration/JsonConfigurationReader используется обоими приложениями.
+Инструкция первого запуска утилиты: WINDOWS-ADMIN.md.

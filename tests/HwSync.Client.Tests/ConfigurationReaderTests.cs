@@ -1,7 +1,8 @@
+using HwSync.Windows.AppServices.Common.Configuration;
 using System.IO;
 using System.Text.Json;
-using HwSync.Client.Windows.Application.Configuration;
-using HwSync.Client.Windows.Contract.Configuration;
+using HwSync.Windows.AppServices.Client.Configuration;
+using HwSync.Windows.Contract.Client.Configuration;
 
 namespace HwSync.Client.Tests
 {

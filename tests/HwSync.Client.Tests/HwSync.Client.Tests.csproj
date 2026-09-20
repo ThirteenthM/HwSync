@@ -19,5 +19,5 @@
     <Using Include="NUnit.Framework" />
   </ItemGroup>
 
-  <ItemGroup><ProjectReference Include="../../src/HwSync.Client.Windows.Application/HwSync.Client.Windows.Application.csproj" /></ItemGroup>
+  <ItemGroup><ProjectReference Include="../../src/HwSync.Windows.AppServices/HwSync.Windows.AppServices.csproj" /></ItemGroup>
 </Project>

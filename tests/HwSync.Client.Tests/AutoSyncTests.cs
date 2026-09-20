@@ -1,11 +1,11 @@
 using System.IO;
 using HwSync.Api.Client;
 using HwSync.Api.Contracts;
-using HwSync.Client.Windows.Application;
-using HwSync.Client.Windows.Application.ViewModels;
-using HwSync.Client.Windows.Contract.Configuration;
-using HwSync.Client.Windows.Contract.Services;
-using HwSync.Client.Windows.Contract.ViewModels;
+using HwSync.Windows.AppServices.Client;
+using HwSync.Windows.AppServices.Client.ViewModels;
+using HwSync.Windows.Contract.Client.Configuration;
+using HwSync.Windows.Contract.Client.Services;
+using HwSync.Windows.Contract.Client.ViewModels;
 using HwSync.Infrastructure.FileSystem;
 
 namespace HwSync.Client.Tests
@@ -24,7 +24,7 @@ namespace HwSync.Client.Tests
         [TestCase(true, false, SyncRule.Delete, FileSyncDecision.DeleteOnClient)]
         [TestCase(true, false, SyncRule.Keep, FileSyncDecision.Skip)]
         [TestCase(false, true, SyncRule.Skip, FileSyncDecision.Skip)]
-        [TestCase(true, true, SyncRule.Copy, FileSyncDecision.AskUser)]
+        [TestCase(true, true, SyncRule.Copy, FileSyncDecision.KeepBoth)]
         [TestCase(false, false, SyncRule.Copy, FileSyncDecision.AskUser)]
         public void Strategy_ChoosesAction(bool client, bool server, SyncRule rule, FileSyncDecision expected)
         {
@@ -36,6 +36,7 @@ namespace HwSync.Client.Tests
         /// Отличает запрос решения от явного пропуска конфликтующих файлов.
         /// </summary>
         [TestCase(SyncRule.AskUser, FileSyncDecision.AskUser)]
+        [TestCase(SyncRule.KeepBoth, FileSyncDecision.KeepBoth)]
         [TestCase(SyncRule.Skip, FileSyncDecision.Skip)]
         [TestCase(SyncRule.Keep, FileSyncDecision.Skip)]
         [TestCase(SyncRule.Copy, FileSyncDecision.AskUser)]
@@ -53,7 +54,7 @@ namespace HwSync.Client.Tests
         {
             string root = CreateDirectory();
             TestClient api = new();
-            using MainViewModel model = CreateModel(root, api, new() { ClientOnlyFiles = SyncRule.Copy });
+            using MainViewModel model = CreateModel(root, api, new() { ClientOnlyFiles = SyncRule.Copy, DifferentFiles = SyncRule.AskUser });
             await model.StartCommand.ExecuteAsync(null);
             Assert.That(model.Changes.Select(row => row.Action), Is.EqualTo(new[]
             {
@@ -79,7 +80,7 @@ namespace HwSync.Client.Tests
         {
             string root = CreateDirectory();
             TestClient api = new();
-            using MainViewModel model = CreateModel(root, api, new() { ClientOnlyFiles = SyncRule.Copy });
+            using MainViewModel model = CreateModel(root, api, new() { ClientOnlyFiles = SyncRule.Copy, DifferentFiles = SyncRule.AskUser });
             await model.StartCommand.ExecuteAsync(null);
             ChangeRow[] rows = model.Changes.Reverse()
                 .Where(row => !filterServerFile || row.Path != "server.txt").ToArray();
@@ -108,7 +109,7 @@ namespace HwSync.Client.Tests
             string root = CreateDirectory();
             string target = Path.Combine(root, "server.txt");
             TestClient api = new();
-            using MainViewModel model = CreateModel(root, api, new() { ClientOnlyFiles = nextRule });
+            using MainViewModel model = CreateModel(root, api, new() { ClientOnlyFiles = nextRule, DifferentFiles = SyncRule.AskUser });
             model.ConfirmDeletion = (_, _) => true;
             await model.StartCommand.ExecuteAsync(null);
             if (duringDownload)
@@ -139,7 +140,7 @@ namespace HwSync.Client.Tests
         {
             string root = CreateDirectory();
             TestClient api = new() { OnDownload = () => throw new IOException("Download failed") };
-            using MainViewModel model = CreateModel(root, api, new() { ClientOnlyFiles = SyncRule.Copy });
+            using MainViewModel model = CreateModel(root, api, new() { ClientOnlyFiles = SyncRule.Copy, DifferentFiles = SyncRule.AskUser });
             await model.StartCommand.ExecuteAsync(null);
 
             await model.AutoSyncCommand.ExecuteAsync(null);
@@ -159,7 +160,7 @@ namespace HwSync.Client.Tests
         {
             string root = CreateDirectory();
             TestClient api = new();
-            using MainViewModel model = CreateModel(root, api, new() { ClientOnlyFiles = SyncRule.Copy });
+            using MainViewModel model = CreateModel(root, api, new() { ClientOnlyFiles = SyncRule.Copy, DifferentFiles = SyncRule.AskUser });
             await model.StartCommand.ExecuteAsync(null);
             ChangeRow first = model.Changes.First();
             ChangeRow duplicate = first with
@@ -191,7 +192,7 @@ namespace HwSync.Client.Tests
             TestClient api = new();
             using MainViewModel model = CreateModel(root, api, new()
             {
-                MissingOnClient = SyncRule.Delete, ClientOnlyFiles = SyncRule.Delete
+                MissingOnClient = SyncRule.Delete, ClientOnlyFiles = SyncRule.Delete, DifferentFiles = SyncRule.AskUser
             });
             model.ConfirmDeletion = (_, _) => confirmed;
             await model.StartCommand.ExecuteAsync(null);
@@ -213,7 +214,7 @@ namespace HwSync.Client.Tests
             TestClient api = new();
             using MainViewModel model = CreateModel(root, api, new()
             {
-                MissingOnClient = SyncRule.Skip, ClientOnlyFiles = SyncRule.Delete
+                MissingOnClient = SyncRule.Skip, ClientOnlyFiles = SyncRule.Delete, DifferentFiles = SyncRule.AskUser
             });
             model.ConfirmDeletion = (_, _) => true;
             await model.StartCommand.ExecuteAsync(null);
@@ -232,7 +233,7 @@ namespace HwSync.Client.Tests
         {
             string root = CreateDirectory();
             TestClient api = new() { WaitForCancellation = true };
-            using MainViewModel model = CreateModel(root, api, new() { ClientOnlyFiles = SyncRule.Copy });
+            using MainViewModel model = CreateModel(root, api, new() { ClientOnlyFiles = SyncRule.Copy, DifferentFiles = SyncRule.AskUser });
             await model.StartCommand.ExecuteAsync(null);
             Task execution = model.AutoSyncCommand.ExecuteAsync(null);
             await api.Started.Task.WaitAsync(TimeSpan.FromSeconds(5));
@@ -264,6 +265,71 @@ namespace HwSync.Client.Tests
         }
 
         /// <summary>
+        /// Выбор меняет только план; выполнение применяет нужную версию.
+        /// </summary>
+        [TestCase(FileSyncDecision.ReplaceOnClient)]
+        [TestCase(FileSyncDecision.ReplaceOnServer)]
+        [TestCase(FileSyncDecision.KeepBoth)]
+        [TestCase(FileSyncDecision.Skip)]
+        [TestCase(FileSyncDecision.AskUser)]
+        public async Task Conflict_ChoiceIsDeferredUntilAutoSync(FileSyncDecision decision)
+        {
+            string root = CreateDirectory();
+            TestClient api = new();
+            using MainViewModel model = CreateModel(root, api, new()
+            {
+                MissingOnClient = SyncRule.Skip, DifferentFiles = SyncRule.AskUser
+            });
+            await model.StartCommand.ExecuteAsync(null);
+            ChangeRow conflict = model.Changes.Single(row => row.IsConflict);
+            model.ChooseConflictResolution = row =>
+            {
+                Assert.That(row.PreviousModifiedUtc, Is.Not.Null);
+                Assert.That(row.CurrentModifiedUtc, Is.Not.Null);
+                return decision;
+            };
+            model.ResolveConflictCommand.Execute(conflict);
+            Assert.That(File.ReadAllText(Path.Combine(root, "conflict.txt")), Is.EqualTo("local conflict"));
+            Assert.That(api.Replaced, Is.Null);
+            Assert.That(api.Preserved, Is.Null);
+            Assert.That(model.Changes.Single(row => row.IsConflict).Action, Is.EqualTo(decision));
+            bool executable = decision is not (FileSyncDecision.AskUser or FileSyncDecision.Skip);
+            Assert.That(model.AutoSyncCommand.CanExecute(null), Is.EqualTo(executable));
+            if (!executable)
+            {
+                return;
+            }
+
+            await model.AutoSyncCommand.ExecuteAsync(null);
+
+            Assert.That(model.Error, Is.Empty);
+            Assert.That(File.ReadAllText(Path.Combine(root, "conflict.txt")),
+                Is.EqualTo(decision == FileSyncDecision.ReplaceOnServer ? "local conflict" : "server!!"));
+            Assert.That(api.Replaced, Is.EqualTo(decision == FileSyncDecision.ReplaceOnServer ? "local conflict" : null));
+            Assert.That(api.Preserved, Is.EqualTo(decision == FileSyncDecision.KeepBoth ? "local conflict" : null));
+            string[] backups = Directory.GetFiles(root, "*client-conflict*");
+            Assert.That(backups.Length, Is.EqualTo(decision == FileSyncDecision.KeepBoth ? 1 : 0));
+            if (backups.Length > 0)
+            {
+                Assert.That(File.ReadAllText(backups[0]), Is.EqualTo("local conflict"));
+            }
+        }
+
+        /// <summary>
+        /// Закрытие диалога без выбора сохраняет прежний план.
+        /// </summary>
+        [Test]
+        public async Task Conflict_CancelKeepsPlan()
+        {
+            using MainViewModel model = CreateModel(CreateDirectory(), new(), new());
+            await model.StartCommand.ExecuteAsync(null);
+            ChangeRow conflict = model.Changes.Single(row => row.IsConflict);
+            Assert.That(conflict.Action, Is.EqualTo(FileSyncDecision.KeepBoth));
+            model.ChooseConflictResolution = _ => null;
+            model.ResolveConflictCommand.Execute(conflict);
+            Assert.That(model.Changes.Single(row => row.IsConflict), Is.EqualTo(conflict));
+        }
+        /// <summary>
         /// Создаёт независимую папку с локальным файлом и конфликтом.
         /// </summary>
         private static string CreateDirectory()
@@ -281,7 +347,7 @@ namespace HwSync.Client.Tests
         private static MainViewModel CreateModel(string root, TestClient api, ConflictRules rules)
         {
             MainViewModel model = new(_ => api, new DirectorySnapshotProvider(), new ComparedFileOperations(),
-                new SourceFileReader(), new MissingFileSynchronizer(), new SyncDecisionService());
+                new SourceFileReader(), new MissingFileSynchronizer(), new SyncDecisionService(), new ConflictFileOperations(new SourceFileReader()));
             model.LoadProfiles([new()
             {
                 ClientRootPath = root, ServerRootPath = Path.Combine(root, "server"), Rules = rules
@@ -292,8 +358,12 @@ namespace HwSync.Client.Tests
         /// <summary>
         /// Сервер сравнения и файловых операций без сетевых запросов.
         /// </summary>
-        private sealed class TestClient : IHwSyncApiClient, IFileDownloadClient, IFileMutationClient
+        private sealed class TestClient : IHwSyncApiClient, IFileDownloadClient, IFileMutationClient, IConflictFileClient
         {
+            public string? Replaced { get; private set; }
+
+            public string? Preserved { get; private set; }
+
             public string? Uploaded { get; private set; }
 
             public Action? OnDownload { get; set; }
@@ -350,7 +420,7 @@ namespace HwSync.Client.Tests
                     await Task.Delay(Timeout.Infinite, token);
                 }
 
-                await target.WriteAsync("server"u8.ToArray(), token);
+                await target.WriteAsync(System.Text.Encoding.UTF8.GetBytes(relativePath == "conflict.txt" ? "server!!" : "server"), token);
             }
 
             /// <summary>
@@ -362,6 +432,23 @@ namespace HwSync.Client.Tests
                 Uploaded = await reader.ReadToEndAsync(token);
             }
 
+            /// <summary>
+            /// Запоминает версию, выбранную для замены на сервере.
+            /// </summary>
+            public async Task ReplaceServerFileAsync(Guid jobId, string relativePath, Stream source, CancellationToken token)
+            {
+                using StreamReader reader = new(source, leaveOpen: true);
+                Replaced = await reader.ReadToEndAsync(token);
+            }
+
+            /// <summary>
+            /// Запоминает дополнительную клиентскую копию для сохранения обеих версий.
+            /// </summary>
+            public async Task PreserveClientFileAsync(Guid jobId, string relativePath, Stream source, CancellationToken token)
+            {
+                using StreamReader reader = new(source, leaveOpen: true);
+                Preserved = await reader.ReadToEndAsync(token);
+            }
             /// <summary>
             /// Регистрирует удаление на сервере.
             /// </summary>

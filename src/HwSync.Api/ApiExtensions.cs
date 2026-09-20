@@ -1,6 +1,8 @@
 using System.Net;
 using System.Text.Json.Serialization;
+using HwSync.Api.Authentication;
 using HwSync.Api.Controllers;
+using Microsoft.AspNetCore.Authentication;
 using HwSync.Api.Handlers;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
@@ -18,9 +20,19 @@ namespace HwSync.Api
         /// </summary>
         public static IServiceCollection AddHwSyncApi(this IServiceCollection services)
         {
+            services.AddAuthentication().AddScheme<AuthenticationSchemeOptions, AdministrationAuthenticationHandler>(
+                AdministrationAuthenticationHandler.SchemeName, options =>
+                {
+                });
+            services.AddAuthorization(options => options.AddPolicy(
+                AdministrationAuthenticationHandler.ReadPolicy,
+                policy => policy.AddAuthenticationSchemes(AdministrationAuthenticationHandler.SchemeName)
+                    .RequireAuthenticatedUser().RequireClaim("administration", "read")));
+            services.AddTransient<AdministrationHandler>();
             services.AddTransient<ScanJobHandler>();
             services.AddTransient<FileTransferHandler>();
             services.AddTransient<FileMutationHandler>();
+            services.AddTransient<ConflictFileHandler>();
             services.AddControllers().AddApplicationPart(typeof(ScanJobsController).Assembly)
                 .AddJsonOptions(options => options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
             return services;
@@ -41,6 +53,8 @@ namespace HwSync.Api
                 }
                 await next(context);
             });
+            app.UseAuthentication();
+            app.UseAuthorization();
             app.MapControllers();
         }
     }

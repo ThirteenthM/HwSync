@@ -69,6 +69,9 @@ csharp_style_prefer_primary_constructors = false:silent
 # Keep interface-typed variables and dependencies; do not suggest concrete types.
 dotnet_diagnostic.CA1859.severity = none
 
+# Keep readable calls such as ToList(); do not suggest collection expressions.
+dotnet_diagnostic.IDE0305.severity = none
+
 # --- Naming conventions ---
 # Private instance fields: _camelCase (DI dependencies, state).
 #   Example: private readonly IAppDbConnection _db;
@@ -107,3 +110,7 @@ dotnet_naming_rule.private_fields_should_be_underscore_camel_case.severity = sug
 [*.{csproj,xml,json}]
 indent_style = space
 indent_size = 2
+
+[tests/**/*.cs]
+# Group assertions when appropriate; do not require multiple-assert scopes in every test.
+dotnet_diagnostic.NUnit2045.severity = none

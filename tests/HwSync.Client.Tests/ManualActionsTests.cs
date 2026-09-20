@@ -1,8 +1,8 @@
 using System.IO;
 using HwSync.Api.Client;
 using HwSync.Api.Contracts;
-using HwSync.Client.Windows.Application.ViewModels;
-using HwSync.Client.Windows.Contract.ViewModels;
+using HwSync.Windows.AppServices.Client.ViewModels;
+using HwSync.Windows.Contract.Client.ViewModels;
 using HwSync.Infrastructure.FileSystem;
 
 namespace HwSync.Client.Tests
@@ -24,7 +24,7 @@ namespace HwSync.Client.Tests
             string path = Path.Combine(root, "local.txt");
             await File.WriteAllTextAsync(path, "client");
             ManualClient api = new();
-            using MainViewModel model = new(_ => api, new DirectorySnapshotProvider(), new HwSync.Infrastructure.FileSystem.ComparedFileOperations(), new HwSync.Infrastructure.FileSystem.SourceFileReader(), new HwSync.Infrastructure.FileSystem.MissingFileSynchronizer(), new HwSync.Client.Windows.Application.SyncDecisionService())
+            using MainViewModel model = new(_ => api, new DirectorySnapshotProvider(), new HwSync.Infrastructure.FileSystem.ComparedFileOperations(), new HwSync.Infrastructure.FileSystem.SourceFileReader(), new HwSync.Infrastructure.FileSystem.MissingFileSynchronizer(), new HwSync.Windows.AppServices.Client.SyncDecisionService(), new HwSync.Infrastructure.FileSystem.ConflictFileOperations(new HwSync.Infrastructure.FileSystem.SourceFileReader()))
             {
                 ClientRootPath = root,
                 RootPath = Path.Combine(root, "server"),
@@ -50,7 +50,7 @@ namespace HwSync.Client.Tests
             Directory.CreateDirectory(root);
             await File.WriteAllTextAsync(Path.Combine(root, "local.txt"), "client");
             ManualClient api = new();
-            using MainViewModel model = new(_ => api, new DirectorySnapshotProvider(), new HwSync.Infrastructure.FileSystem.ComparedFileOperations(), new HwSync.Infrastructure.FileSystem.SourceFileReader(), new HwSync.Infrastructure.FileSystem.MissingFileSynchronizer(), new HwSync.Client.Windows.Application.SyncDecisionService())
+            using MainViewModel model = new(_ => api, new DirectorySnapshotProvider(), new HwSync.Infrastructure.FileSystem.ComparedFileOperations(), new HwSync.Infrastructure.FileSystem.SourceFileReader(), new HwSync.Infrastructure.FileSystem.MissingFileSynchronizer(), new HwSync.Windows.AppServices.Client.SyncDecisionService(), new HwSync.Infrastructure.FileSystem.ConflictFileOperations(new HwSync.Infrastructure.FileSystem.SourceFileReader()))
             {
                 TransferMetricsEnabled = metricsEnabled,
                 ClientRootPath = root,

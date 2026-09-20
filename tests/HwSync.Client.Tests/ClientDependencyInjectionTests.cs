@@ -1,8 +1,8 @@
 using System.IO;
-using HwSync.Client.Windows.Application;
-using HwSync.Client.Windows.Contract.Configuration;
-using HwSync.Client.Windows.Contract.Services;
-using HwSync.Client.Windows.Contract.ViewModels;
+using HwSync.Windows.AppServices.Client;
+using HwSync.Windows.Contract.Client.Configuration;
+using HwSync.Windows.Contract.Client.Services;
+using HwSync.Windows.Contract.Client.ViewModels;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace HwSync.Client.Tests

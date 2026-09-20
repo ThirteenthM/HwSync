@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    <ProjectReference Include="../HwSync.Core/HwSync.Core.csproj" />
+    <ProjectReference Include="../HwSync.Infrastructure/HwSync.Infrastructure.csproj" />
+    <ProjectReference Include="../HwSync.Api/HwSync.Api.csproj" />
+    <ProjectReference Include="../HwSync.Persistence.Sqlite.Migrations/HwSync.Persistence.Sqlite.Migrations.csproj" />
+  </ItemGroup>
+</Project>

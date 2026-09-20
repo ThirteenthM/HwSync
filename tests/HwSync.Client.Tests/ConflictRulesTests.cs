@@ -1,7 +1,7 @@
 using System.IO;
 using System.Text.Json;
-using HwSync.Client.Windows.Application.Configuration;
-using HwSync.Client.Windows.Contract.Configuration;
+using HwSync.Windows.AppServices.Client.Configuration;
+using HwSync.Windows.Contract.Client.Configuration;
 
 namespace HwSync.Client.Tests
 {
@@ -33,9 +33,9 @@ namespace HwSync.Client.Tests
             {
                 ConflictRules rules = new SyncProfileReader(new()).Load(path).Single().Rules;
                 Assert.That(rules.MissingOnClient, Is.EqualTo(SyncRule.Copy));
-                Assert.That(rules.DifferentFiles, Is.EqualTo(includeRules ? SyncRule.Skip : SyncRule.AskUser));
+                Assert.That(rules.DifferentFiles, Is.EqualTo(includeRules ? SyncRule.Skip : SyncRule.KeepBoth));
                 Assert.That(rules.ClientOnlyFiles, Is.EqualTo(SyncRule.Keep));
-                Assert.That(rules.ServerDeletions, Is.EqualTo(SyncRule.RecordOnly));
+                Assert.That(rules.ServerDeletions, Is.EqualTo(includeRules ? SyncRule.RecordOnly : SyncRule.Delete));
             }
             finally
             {
@@ -78,7 +78,7 @@ namespace HwSync.Client.Tests
         [TestCase("MissingOnClient", "RecordOnly")]
         [TestCase("DifferentFiles", "Copy")]
         [TestCase("ClientOnlyFiles", "RecordOnly")]
-        [TestCase("ServerDeletions", "Keep")]
+        [TestCase("ServerDeletions", "Copy")]
         public void Load_RejectsInvalidRuleCombination(string property, string value)
         {
             Dictionary<string, object> profile = CreateProfile();
@@ -107,6 +107,9 @@ namespace HwSync.Client.Tests
         [TestCase("ClientOnlyFiles", "Skip")]
         [TestCase("DifferentFiles", "Keep")]
         [TestCase("DifferentFiles", "AskUser")]
+        [TestCase("DifferentFiles", "KeepBoth")]
+        [TestCase("ServerDeletions", "Delete")]
+        [TestCase("ClientDeletions", "AskUser")]
         public void Load_AcceptsAutomaticRules(string property, string value)
         {
             Dictionary<string, object> profile = CreateProfile();
@@ -119,6 +122,8 @@ namespace HwSync.Client.Tests
                 {
                     "MissingOnClient" => rules.MissingOnClient,
                     "ClientOnlyFiles" => rules.ClientOnlyFiles,
+                    "ServerDeletions" => rules.ServerDeletions,
+                    "ClientDeletions" => rules.ClientDeletions,
                     _ => rules.DifferentFiles
                 };
                 Assert.That(actual, Is.EqualTo(Enum.Parse<SyncRule>(value)));

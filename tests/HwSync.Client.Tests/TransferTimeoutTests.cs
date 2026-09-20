@@ -2,8 +2,8 @@ using System.IO;
 using System.Net;
 using System.Net.Http;
 using HwSync.Api.Client;
-using HwSync.Client.Windows.Application.Configuration;
-using HwSync.Client.Windows.Contract.Configuration;
+using HwSync.Windows.AppServices.Client.Configuration;
+using HwSync.Windows.Contract.Client.Configuration;
 
 namespace HwSync.Client.Tests
 {

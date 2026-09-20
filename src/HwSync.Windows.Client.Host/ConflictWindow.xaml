@@ -1,0 +1,35 @@
+<Window x:Class="HwSync.Windows.Client.Host.ConflictWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Разобрать конфликт" Width="700" SizeToContent="Height" ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner" FontFamily="Segoe UI" FontSize="14" Background="#F3F5F8">
+    <StackPanel Margin="24" Background="#F3F5F8">
+        <TextBlock Text="{Binding Path}" FontSize="18" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,0,0,16"/>
+        <Grid Background="White" Margin="0,0,0,16">
+            <Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition/></Grid.ColumnDefinitions>
+            <StackPanel Margin="12">
+                <TextBlock Text="На клиенте" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                <TextBlock Text="{Binding PreviousSizeMegabytes, TargetNullValue=Отсутствует, StringFormat={}{0:0.000} МБ}"/>
+                <TextBlock Text="{Binding PreviousModifiedUtc, StringFormat={}{0:yyyy-MM-dd HH:mm:ss} UTC}"/>
+            </StackPanel>
+            <StackPanel Grid.Column="1" Margin="12">
+                <TextBlock Text="На сервере" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                <TextBlock Text="{Binding CurrentSizeMegabytes, TargetNullValue=Отсутствует, StringFormat={}{0:0.000} МБ}"/>
+                <TextBlock Text="{Binding CurrentModifiedUtc, StringFormat={}{0:yyyy-MM-dd HH:mm:ss} UTC}"/>
+            </StackPanel>
+        </Grid>
+        <TextBlock Text="{Binding ConflictDescription}" TextWrapping="Wrap" Margin="0,0,0,16"/>
+        <TextBlock Text="Выберите действие" Margin="0,0,0,8"/>
+        <RadioButton x:Name="KeepBoth" Content="Сохранить обе версии на клиенте и сервере" Margin="0,0,0,10"/>
+        <RadioButton x:Name="TakeServer" Content="Взять с сервера — заменить версию клиента" Margin="0,0,0,10"/>
+        <RadioButton x:Name="TakeClient" Content="Взять с клиента — заменить версию сервера" Margin="0,0,0,10"/>
+        <RadioButton x:Name="LeaveUnchanged" Content="Оставить без изменений в этом плане" Margin="0,0,0,10"/>
+        <RadioButton x:Name="DecideLater" Content="Отложить решение — оставить вопрос" Margin="0,0,0,16"/>
+        <TextBlock Text="Выбор только обновляет план. Изменение файлов начнётся после нажатия «Автосинхронизация». При сохранении обеих версий клиентская копия получит отдельное имя с пометкой конфликта."
+                   TextWrapping="Wrap" Foreground="#58697B" Margin="0,0,0,20"/>
+        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Content="Отмена" IsCancel="True" Padding="16,8" Margin="0,0,10,0"/>
+            <Button Content="Добавить в план" IsDefault="True" Click="Apply_Click" Padding="16,8"/>
+        </StackPanel>
+    </StackPanel>
+</Window>

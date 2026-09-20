@@ -15,6 +15,10 @@ namespace HwSync.Api.Controllers
         /// Возвращает подтверждение готовности сервера.
         /// </summary>
         [HttpGet]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage(
+            "Performance",
+            "CA1822:Mark members as static",
+            Justification = "MVC требует метод экземпляра для действия контроллера.")]
         public HealthResponse Get() => new("ok");
     }
 }

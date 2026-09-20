@@ -3,8 +3,8 @@ using System.Net.Http;
 using System.Text;
 using HwSync.Api.Client;
 using HwSync.Api.Contracts;
-using HwSync.Client.Windows.Application.ViewModels;
-using HwSync.Client.Windows.Contract.ViewModels;
+using HwSync.Windows.AppServices.Client.ViewModels;
+using HwSync.Windows.Contract.Client.ViewModels;
 
 namespace HwSync.Client.Tests
 {
@@ -75,7 +75,7 @@ namespace HwSync.Client.Tests
         public async Task PollFailure_CanResumeWithoutStartingDuplicateJob()
         {
             StubClient client = new();
-            using MainViewModel model = new(address => client, new StubSnapshotProvider(), new HwSync.Infrastructure.FileSystem.ComparedFileOperations(), new HwSync.Infrastructure.FileSystem.SourceFileReader(), new HwSync.Infrastructure.FileSystem.MissingFileSynchronizer(), new HwSync.Client.Windows.Application.SyncDecisionService())
+            using MainViewModel model = new(address => client, new StubSnapshotProvider(), new HwSync.Infrastructure.FileSystem.ComparedFileOperations(), new HwSync.Infrastructure.FileSystem.SourceFileReader(), new HwSync.Infrastructure.FileSystem.MissingFileSynchronizer(), new HwSync.Windows.AppServices.Client.SyncDecisionService(), new HwSync.Infrastructure.FileSystem.ConflictFileOperations(new HwSync.Infrastructure.FileSystem.SourceFileReader()))
             {
                 ClientRootPath = @"D:\client-folder",
                 RootPath = @"D:\server-folder"
@@ -98,7 +98,7 @@ namespace HwSync.Client.Tests
         public async Task Cancel_SendsRequestToServer()
         {
             StubClient client = new();
-            using MainViewModel model = new(address => client, new StubSnapshotProvider(), new HwSync.Infrastructure.FileSystem.ComparedFileOperations(), new HwSync.Infrastructure.FileSystem.SourceFileReader(), new HwSync.Infrastructure.FileSystem.MissingFileSynchronizer(), new HwSync.Client.Windows.Application.SyncDecisionService())
+            using MainViewModel model = new(address => client, new StubSnapshotProvider(), new HwSync.Infrastructure.FileSystem.ComparedFileOperations(), new HwSync.Infrastructure.FileSystem.SourceFileReader(), new HwSync.Infrastructure.FileSystem.MissingFileSynchronizer(), new HwSync.Windows.AppServices.Client.SyncDecisionService(), new HwSync.Infrastructure.FileSystem.ConflictFileOperations(new HwSync.Infrastructure.FileSystem.SourceFileReader()))
             {
                 ClientRootPath = @"D:\client-folder",
                 RootPath = @"D:\server-folder"
@@ -117,7 +117,7 @@ namespace HwSync.Client.Tests
         public async Task MissingLocalFolder_DoesNotSendServerRequest()
         {
             StubClient client = new();
-            using MainViewModel model = new(address => client, new HwSync.Infrastructure.FileSystem.DirectorySnapshotProvider(), new HwSync.Infrastructure.FileSystem.ComparedFileOperations(), new HwSync.Infrastructure.FileSystem.SourceFileReader(), new HwSync.Infrastructure.FileSystem.MissingFileSynchronizer(), new HwSync.Client.Windows.Application.SyncDecisionService())
+            using MainViewModel model = new(address => client, new HwSync.Infrastructure.FileSystem.DirectorySnapshotProvider(), new HwSync.Infrastructure.FileSystem.ComparedFileOperations(), new HwSync.Infrastructure.FileSystem.SourceFileReader(), new HwSync.Infrastructure.FileSystem.MissingFileSynchronizer(), new HwSync.Windows.AppServices.Client.SyncDecisionService(), new HwSync.Infrastructure.FileSystem.ConflictFileOperations(new HwSync.Infrastructure.FileSystem.SourceFileReader()))
             {
                 ClientRootPath = System.IO.Path.Combine(System.IO.Path.GetTempPath(), Guid.NewGuid().ToString()),
                 RootPath = @"D:\server-folder"

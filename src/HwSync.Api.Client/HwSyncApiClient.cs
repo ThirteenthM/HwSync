@@ -8,7 +8,7 @@ namespace HwSync.Api.Client
     /// <summary>
     /// HTTP-клиент сравнения папок и передачи файлов.
     /// </summary>
-    public sealed class HwSyncApiClient : IHwSyncApiClient, IFileDownloadClient, IFileMutationClient
+    public sealed class HwSyncApiClient : IHwSyncApiClient, IFileDownloadClient, IFileMutationClient, IConflictFileClient, IDeletionHistoryClient
     {
         private static readonly JsonSerializerOptions JsonOptions = CreateJsonOptions();
         private readonly HttpClient _httpClient;
@@ -50,6 +50,11 @@ namespace HwSync.Api.Client
         public Task<ScanJobResponse> StartComparisonAsync(CompareFoldersRequest request, CancellationToken cancellationToken = default) =>
             SendAsync<ScanJobResponse>(HttpMethod.Post, "api/v1/scan-jobs", request, cancellationToken);
 
+        /// <summary>
+        /// Получает историю удалений папки выбранного сравнения.
+        /// </summary>
+        public async Task<IReadOnlyList<DeletedFileDto>> GetDeletedFilesAsync(Guid jobId, CancellationToken token) =>
+            await SendAsync<DeletedFileDto[]>(HttpMethod.Get, $"api/v1/scan-jobs/{jobId}/deleted-files", null, token);
         /// <summary>
         /// Получает состояние и результат задания.
         /// </summary>
@@ -99,6 +104,17 @@ namespace HwSync.Api.Client
         public Task EnsureServerFileMissingAsync(Guid jobId, string relativePath, CancellationToken token) =>
             MutateAsync(HttpMethod.Post, jobId, "verify-missing", relativePath, null, token);
 
+        /// <summary>
+        /// Заменяет серверную версию файла из выбранного сравнения.
+        /// </summary>
+        public Task ReplaceServerFileAsync(Guid jobId, string relativePath, Stream source, CancellationToken token) =>
+            MutateAsync(HttpMethod.Put, jobId, "conflict/replace", relativePath, source, token);
+
+        /// <summary>
+        /// Сохраняет клиентскую версию отдельно от серверного оригинала.
+        /// </summary>
+        public Task PreserveClientFileAsync(Guid jobId, string relativePath, Stream source, CancellationToken token) =>
+            MutateAsync(HttpMethod.Put, jobId, "conflict/preserve", relativePath, source, token);
         /// <summary>
         /// Выполняет файловый запрос с отдельным ожиданием прогресса загрузки.
         /// </summary>

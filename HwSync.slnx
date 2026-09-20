@@ -4,17 +4,23 @@
         <Project Path="src/HwSync.Api.Client/HwSync.Api.Client.csproj" />
         <Project Path="src/HwSync.Api.Contracts/HwSync.Api.Contracts.csproj" />
         <Project Path="src/HwSync.Api/HwSync.Api.csproj" />
-        <Project Path="src/HwSync.Client.Windows.Host/HwSync.Client.Windows.Host.csproj" />
-        <Project Path="src/HwSync.Client.Windows.Contract/HwSync.Client.Windows.Contract.csproj" />
-        <Project Path="src/HwSync.Client.Windows.Application/HwSync.Client.Windows.Application.csproj" />
+        <Project Path="src/HwSync.Windows.Client.Host/HwSync.Windows.Client.Host.csproj" />
+        <Project Path="src/HwSync.Windows.Admin.Host/HwSync.Windows.Admin.Host.csproj" />
+        <Project Path="src/HwSync.Windows.Contract/HwSync.Windows.Contract.csproj" />
+        <Project Path="src/HwSync.Windows.AppServices/HwSync.Windows.AppServices.csproj" />
         <Project Path="src/HwSync.Core/HwSync.Core.csproj" />
-        <Project Path="src/HwSync.Host/HwSync.Host.csproj" />
+        <Project Path="src/HwSync.Windows.Server.Host/HwSync.Windows.Server.Host.csproj" />
+        <Project Path="src/HwSync.Server.AppServices/HwSync.Server.AppServices.csproj" />
         <Project Path="src/HwSync.Infrastructure/HwSync.Infrastructure.csproj" />
+        <Project Path="src/HwSync.Persistence.Sqlite/HwSync.Persistence.Sqlite.csproj" />
+        <Project Path="src/HwSync.Persistence.Sqlite.Migrations/HwSync.Persistence.Sqlite.Migrations.csproj" />
     </Folder>
     <Folder Name="/tests/">
         <Project Path="tests/HwSync.Client.Tests/HwSync.Client.Tests.csproj" />
-        <Project Path="tests/HwSync.Client.Windows.Host.Tests/HwSync.Client.Windows.Host.Tests.csproj" />
+        <Project Path="tests/HwSync.Windows.Client.Host.Tests/HwSync.Windows.Client.Host.Tests.csproj" />
         <Project Path="tests/HwSync.Core.Tests/HwSync.Core.Tests.csproj" />
-        <Project Path="tests/HwSync.Host.Tests/HwSync.Host.Tests.csproj" />
+        <Project Path="tests/HwSync.Persistence.Sqlite.Tests/HwSync.Persistence.Sqlite.Tests.csproj" />
+        <Project Path="tests/HwSync.Windows.Server.Host.Tests/HwSync.Windows.Server.Host.Tests.csproj" />
+        <Project Path="tests/HwSync.Server.AppServices.Tests/HwSync.Server.AppServices.Tests.csproj" />
     </Folder>
 </Solution>

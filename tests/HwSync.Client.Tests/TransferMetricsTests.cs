@@ -1,8 +1,8 @@
 using System.IO;
-using HwSync.Client.Windows.Application.Configuration;
-using HwSync.Client.Windows.Contract.Configuration;
-using HwSync.Client.Windows.Application.Diagnostics;
-using HwSync.Client.Windows.Contract.Diagnostics;
+using HwSync.Windows.AppServices.Client.Configuration;
+using HwSync.Windows.Contract.Client.Configuration;
+using HwSync.Windows.AppServices.Client.Diagnostics;
+using HwSync.Windows.Contract.Client.Diagnostics;
 
 namespace HwSync.Client.Tests
 {
