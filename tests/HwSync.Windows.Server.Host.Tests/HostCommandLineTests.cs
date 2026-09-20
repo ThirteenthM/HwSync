@@ -7,6 +7,12 @@ namespace HwSync.Windows.Server.Host.Tests
     /// </summary>
     public class HostCommandLineTests
     {
+        private static readonly string[] Expected = new[]
+        {
+            "Logging:LogLevel:Default=Debug",
+            "Example=with spaces=and equals"
+        };
+
         /// <summary>
         /// Проверяет передачу режима и настроек из командной строки.
         /// </summary>
@@ -21,10 +27,7 @@ namespace HwSync.Windows.Server.Host.Tests
                 Assert.Multiple(() =>
                 {
                     Assert.That(mode, Is.EqualTo(consoleMode));
-                    Assert.That(settings, Is.EqualTo(new[]
-{
- "Logging:LogLevel:Default=Debug", "Example=with spaces=and equals"
-}));
+                    Assert.That(settings, Is.EqualTo(Expected));
                 });
                 return Task.CompletedTask;
             });

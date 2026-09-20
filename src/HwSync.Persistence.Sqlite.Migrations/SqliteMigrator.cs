@@ -46,7 +46,7 @@ namespace HwSync.Persistence.Sqlite.Migrations
                 """;
             command.ExecuteNonQuery();
             command.CommandText = "SELECT version, name, checksum FROM schema_migrations ORDER BY version";
-            List<(int Version, string Name, string Checksum)> applied = new();
+            List<(int Version, string Name, string Checksum)> applied = [];
             using (SqliteDataReader reader = command.ExecuteReader())
             {
                 while (reader.Read())

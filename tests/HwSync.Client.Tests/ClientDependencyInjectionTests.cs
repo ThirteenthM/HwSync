@@ -22,7 +22,7 @@ namespace HwSync.Client.Tests
             services.AddWindowsClientApplication(CreateDirectory());
             using ServiceProvider provider = services.BuildServiceProvider();
             IMainViewModel model = provider.GetRequiredService<IMainViewModel>();
-            Assert.That(model.Profiles.Count, Is.EqualTo(1));
+            Assert.That(model.Profiles, Has.Count.EqualTo(1));
             Assert.That(model.ClientRootPath, Is.Empty);
             Assert.That(model.StartCommand.CanExecute(null), Is.False);
         }

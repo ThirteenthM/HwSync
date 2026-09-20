@@ -1,4 +1,4 @@
-<Window x:Class="HwSync.Windows.Client.Host.MainWindow"
+<Window x:Class="HwSync.Windows.Client.Application.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="HwSync — сравнение папок" Width="1060" Height="840" MinWidth="820" MinHeight="740"

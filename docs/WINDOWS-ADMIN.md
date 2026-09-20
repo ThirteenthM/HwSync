@@ -1,6 +1,6 @@
 # Утилита управления сервером
 
-HwSync.Windows.Admin.Host — отдельное Windows-приложение для пользователя управления.
+HwSync.Windows.Admin.Application — отдельное Windows-приложение для пользователя управления.
 Оно не является участником синхронизации, не создаёт собственную SQLite и не сканирует папки.
 Все сведения получает через административный API HwSync.Windows.Server.Host.
 
@@ -34,14 +34,14 @@ HwSync.Windows.Admin.Host — отдельное Windows-приложение д
 3. Пересоберите и запустите HwSync.Windows.Server.Host в консольном режиме, как описано в HOST.md.
    Для надёжного применения изменений доступа перезапустите сервер.
 
-4. Запустите HwSync.Windows.Admin.Host, оставьте адрес http://localhost:5080/,
-   вставьте AccessToken в поле «Персональный ключ доступа» и нажмите «Подключить / обновить».
+4. Запустите HwSync.Windows.Admin.Application, оставьте адрес http://localhost:5080/,
+   задайте AccessToken в переменной окружения HWSYNC_ADMIN_ACCESS_TOKEN до запуска приложения и нажмите «Подключить / обновить».
    Ключ хранится только в памяти до закрытия утилиты. В файл настроек он не записывается.
 
 Для запуска из терминала:
 
     dotnet run --project src/HwSync.Windows.Server.Host -- --console
-    dotnet run --project src/HwSync.Windows.Admin.Host
+    dotnet run --project src/HwSync.Windows.Admin.Application
 
 Команды запускайте в разных терминалах. Второй экземпляр сервера запускать не требуется.
 
@@ -102,12 +102,29 @@ HwSync.Windows.Admin.Host — отдельное Windows-приложение д
 
 - HwSync.Windows.Contract: Common, Client, Administration — контракты двух приложений.
 - HwSync.Windows.AppServices: такие же разделы с реализациями и ViewModel; без WPF.
-- HwSync.Windows.Client.Host: оболочка клиента синхронизации.
-- HwSync.Windows.Admin.Host: оболочка утилиты управления.
+- HwSync.Windows.Client.Application: оболочка клиента синхронизации.
+- HwSync.Windows.Admin.Application: оболочка утилиты управления.
 - HwSync.Api.Contracts/Administration: переносимые типы административного HTTP API.
 - HwSync.Api.Client/AdministrationApiClient: авторизованные HTTP-запросы.
 - HwSync.Api: контроллер, обработчик, аутентификация и проверка права чтения.
 - HwSync.Persistence.Sqlite/SqliteAdministrationStore: чтение серверной базы через абстракцию.
 
-Host получает модель через DI. Административная регистрация не подключает модель
+Windows-приложение получает модель через DI. Административная регистрация не подключает модель
 клиента синхронизации, его файловые службы или локальную историю.
+
+## Ключ из переменной окружения
+
+При запуске утилита читает HWSYNC_ADMIN_ACCESS_TOKEN из окружения своего процесса.
+В PowerShell перед запуском:
+
+    $env:HWSYNC_ADMIN_ACCESS_TOKEN = "ваш AccessToken"
+    dotnet run --project src/HwSync.Windows.Admin.Application
+
+Для запуска из Visual Studio задайте переменную в окружении пользователя Windows,
+затем полностью перезапустите Visual Studio, чтобы она передала её приложению.
+Не добавляйте настоящий ключ в отслеживаемый launchSettings.json.
+
+Ключ из окружения не отображается в поле формы: можно сразу нажать «Подключить / обновить».
+Ручной ввод в поле заменяет загруженный ключ для текущего запуска.
+При отсутствии переменной ключ нужно ввести вручную. Изменение окружения требует перезапуска приложения.
+Переменная содержит сам AccessToken, а не TokenSha256; настройки пользователя на сервере остаются прежними.

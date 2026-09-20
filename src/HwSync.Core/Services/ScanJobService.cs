@@ -10,8 +10,8 @@ namespace HwSync.Core.Services
     public sealed class ScanJobService : IScanJobService
     {
         private const int Capacity = 100;
-        private readonly object _gate = new();
-        private readonly Dictionary<Guid, ScanJob> _jobs = new();
+        private readonly System.Threading.Lock _gate = new();
+        private readonly Dictionary<Guid, ScanJob> _jobs = [];
         private readonly Channel<(Guid Id, ChangeScanRequest Request)> _queue =
             Channel.CreateBounded<(Guid, ChangeScanRequest)>(Capacity);
         private bool _stopping;
@@ -42,11 +42,7 @@ namespace HwSync.Core.Services
                 if (_jobs.Count >= Capacity)
                 {
                     ScanJob? oldest = _jobs.Values.Where(job => job.FinishedAt is not null)
-                        .OrderBy(job => job.FinishedAt).FirstOrDefault();
-                    if (oldest is null)
-                    {
-                        throw new InvalidOperationException("Очередь заданий заполнена.");
-                    }
+                        .OrderBy(job => job.FinishedAt).FirstOrDefault() ?? throw new InvalidOperationException("Очередь заданий заполнена.");
                     _jobs.Remove(oldest.Id);
                 }
                 ScanJob job = new(Guid.NewGuid(), ScanJobStatus.Queued, DateTimeOffset.UtcNow, null, null, null, Path.GetFullPath(request.RootPath));

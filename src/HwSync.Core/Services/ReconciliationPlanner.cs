@@ -28,7 +28,7 @@ namespace HwSync.Core.Services
             Dictionary<string, FileVersion> previous = Index(baseline.Files);
             Dictionary<string, FileVersion> remote = Index(server);
             Dictionary<string, FileVersion> local = Index(client);
-            List<ReconciliationItem> items = new();
+            List<ReconciliationItem> items = [];
             foreach (string path in previous.Keys.Union(remote.Keys, StringComparer.OrdinalIgnoreCase)
                 .Union(local.Keys, StringComparer.OrdinalIgnoreCase).Order(StringComparer.OrdinalIgnoreCase))
             {

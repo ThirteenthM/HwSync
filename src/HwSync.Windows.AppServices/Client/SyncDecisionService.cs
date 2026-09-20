@@ -88,5 +88,6 @@ namespace HwSync.Windows.AppServices.Client
                 SyncRule.Keep or SyncRule.Skip or SyncRule.RecordOnly => FileSyncDecision.Skip,
                 _ => FileSyncDecision.AskUser
             };
-        }    }
+        }
+    }
 }

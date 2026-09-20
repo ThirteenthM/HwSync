@@ -100,6 +100,46 @@ namespace HwSync.Client.Tests
         }
 
         /// <summary>
+        /// Ключ из окружения передаётся API, а ручной ввод заменяет его.
+        /// </summary>
+        [TestCase(true)]
+        [TestCase(false)]
+        [NonParallelizable]
+        public async Task AdminContainer_ReadsEnvironmentTokenAndAllowsOverride(bool hasEnvironmentToken)
+        {
+            const string variable = "HWSYNC_ADMIN_ACCESS_TOKEN";
+            string? original = Environment.GetEnvironmentVariable(variable);
+            string token = new('e', 64);
+            try
+            {
+                Environment.SetEnvironmentVariable(variable, hasEnvironmentToken ? token : null);
+                IServiceCollection services = new ServiceCollection();
+                services.AddWindowsAdminServices(Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N")));
+                string? received = null;
+                services.AddSingleton<Func<Uri, string, IAdministrationApiClient>>((_, value) =>
+                {
+                    received = value;
+                    return new FakeApi();
+                });
+                using ServiceProvider provider = services.BuildServiceProvider();
+                IAdminViewModel model = provider.GetRequiredService<IAdminViewModel>();
+                await Execute(model.ConnectCommand);
+                Assert.That(received == token, Is.EqualTo(hasEnvironmentToken));
+                Assert.That(model.Error is null, Is.EqualTo(hasEnvironmentToken));
+
+                string manual = new('m', 64);
+                model.AccessToken = manual;
+                await Execute(model.ConnectCommand);
+                Assert.That(received, Is.EqualTo(manual));
+                Assert.That(model.Error, Is.Null);
+            }
+            finally
+            {
+                Environment.SetEnvironmentVariable(variable, original);
+            }
+        }
+
+        /// <summary>
         /// Создаёт модель с тестовым ключом и API.
         /// </summary>
         private static AdminViewModel CreateModel(FakeApi api) => new((_, _) => api)
@@ -127,12 +167,9 @@ namespace HwSync.Client.Tests
             /// </summary>
             public Task<ServerSettingsDto> GetSettingsAsync(CancellationToken cancellationToken)
             {
-                if (Fail)
-                {
-                    throw new HwSyncApiException(System.Net.HttpStatusCode.Forbidden, "denied");
-                }
-
-                return Task.FromResult(new ServerSettingsDto("1", "server", @"D:\state.db", ["http://localhost:5080"],
+                return Fail
+                    ? throw new HwSyncApiException(System.Net.HttpStatusCode.Forbidden, "denied")
+                    : Task.FromResult(new ServerSettingsDto("1", "server", @"D:\state.db", ["http://localhost:5080"],
                     "Information", true, "operator"));
             }
 
@@ -148,12 +185,10 @@ namespace HwSync.Client.Tests
             public Task<DeletionPageDto> GetDeletionsAsync(string folderId, long after, CancellationToken cancellationToken)
             {
                 Cursors.Add(after);
-                if (Pending is not null)
-                {
-                    return Pending.Task.WaitAsync(cancellationToken);
-                }
 
-                return Task.FromResult(new DeletionPageDto([new(after + 1, $"file-{after}.txt", "server",
+                return Pending is not null
+                    ? Pending.Task.WaitAsync(cancellationToken)
+                    : Task.FromResult(new DeletionPageDto([new(after + 1, $"file-{after}.txt", "server",
                     DateTimeOffset.UtcNow, 1_234_567, DateTimeOffset.UtcNow, true)], after == 0 ? 1 : null));
             }
 

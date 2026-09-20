@@ -8,7 +8,7 @@ using HwSync.Api.Client;
 using HwSync.Api.Contracts.Administration;
 using HwSync.Windows.AppServices.Administration;
 
-namespace HwSync.Windows.Client.Host.Tests
+namespace HwSync.Windows.Client.Application.Tests
 {
     /// <summary>
     /// Проверяет построение отдельного административного окна.
@@ -26,7 +26,7 @@ namespace HwSync.Windows.Client.Host.Tests
             await ((IAsyncRelayCommand)model.ConnectCommand).ExecuteAsync(null);
             model.SelectedFolder = model.Folders.Single();
             await ((IAsyncRelayCommand)model.LoadHistoryCommand).ExecuteAsync(null);
-            HwSync.Windows.Admin.Host.MainWindow window = new(model);
+            HwSync.Windows.Admin.Application.MainWindow window = new(model);
             try
             {
                 Grid content = (Grid)window.Content;

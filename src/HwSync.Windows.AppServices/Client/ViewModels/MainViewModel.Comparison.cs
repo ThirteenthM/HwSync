@@ -22,12 +22,9 @@ namespace HwSync.Windows.AppServices.Client.ViewModels
         /// </summary>
         private IHwSyncApiClient CreateClient()
         {
-            if (!Uri.TryCreate(ServerAddress.Trim(), UriKind.Absolute, out Uri? address))
-            {
-                throw new ArgumentException("Укажите адрес сервера, например http://localhost:5080.");
-            }
-
-            return _createClient(address);
+            return !Uri.TryCreate(ServerAddress.Trim(), UriKind.Absolute, out Uri? address)
+                ? throw new ArgumentException("Укажите адрес сервера, например http://localhost:5080.")
+                : _createClient(address);
         }
 
         /// <summary>
@@ -70,7 +67,7 @@ namespace HwSync.Windows.AppServices.Client.ViewModels
                 }
 
                 Status = "Чтение папки клиента…";
-                Changes = Array.Empty<ChangeRow>();
+                Changes = [];
                 JobId = "—";
                 IReadOnlyCollection<FileSnapshot> snapshot = await Task.Run(() => _snapshotProvider.GetSnapshot(clientRoot), _lifetime.Token);
                 _lifetime.Token.ThrowIfCancellationRequested();

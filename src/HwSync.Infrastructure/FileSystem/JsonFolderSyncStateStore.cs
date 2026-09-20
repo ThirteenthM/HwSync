@@ -12,7 +12,7 @@ namespace HwSync.Infrastructure.FileSystem
     public sealed class JsonFolderSyncStateStore : IFolderSyncStateStore
     {
         private readonly string _directory;
-        private readonly object _gate = new();
+        private readonly System.Threading.Lock _gate = new();
 
         /// <summary>
         /// Задаёт каталог подтверждённых состояний синхронизации.

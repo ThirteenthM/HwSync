@@ -62,12 +62,20 @@ namespace HwSync.Api.Controllers
         /// Возвращает поток файла из завершённого сравнения.
         /// </summary>
         [HttpGet("{id:guid}/file")]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage(
+            "Performance",
+            "CA1822:Mark members as static",
+            Justification = "MVC требует метод экземпляра для действия контроллера.")]
         public IActionResult Download(Guid id, string relativePath, [FromServices] FileTransferHandler handler) => handler.Download(id, relativePath);
 
         /// <summary>
         /// Возвращает отметки удаления файлов папки.
         /// </summary>
         [HttpGet("{id:guid}/deleted-files")]
+        [System.Diagnostics.CodeAnalysis.SuppressMessage(
+            "Performance",
+            "CA1822:Mark members as static",
+            Justification = "MVC требует метод экземпляра для действия контроллера.")]
         public ActionResult<IReadOnlyList<DeletedFileDto>> DeletedFiles(Guid id, [FromServices] FileTransferHandler handler) => handler.GetDeleted(id);
 
         /// <summary>

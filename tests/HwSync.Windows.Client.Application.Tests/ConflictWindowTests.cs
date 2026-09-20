@@ -3,9 +3,9 @@ using System.Windows;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using HwSync.Windows.Contract.Client.ViewModels;
-using HwSync.Windows.Client.Host;
+using HwSync.Windows.Client.Application;
 
-namespace HwSync.Windows.Client.Host.Tests
+namespace HwSync.Windows.Client.Application.Tests
 {
     /// <summary>
     /// Проверка отображения окна выбора решения конфликта.

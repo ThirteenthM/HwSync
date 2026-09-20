@@ -30,7 +30,8 @@ namespace HwSync.Windows.AppServices.Administration
             services.AddSingleton<IAdminViewModel>(provider => new AdminViewModel(
                 provider.GetRequiredService<Func<Uri, string, IAdministrationApiClient>>())
             {
-                ServerAddress = provider.GetRequiredService<AdminSettings>().ServerAddress
+                ServerAddress = provider.GetRequiredService<AdminSettings>().ServerAddress,
+                AccessToken = Environment.GetEnvironmentVariable("HWSYNC_ADMIN_ACCESS_TOKEN") ?? string.Empty
             });
             return services;
         }

@@ -69,8 +69,27 @@ csharp_style_prefer_primary_constructors = false:silent
 # Keep interface-typed variables and dependencies; do not suggest concrete types.
 dotnet_diagnostic.CA1859.severity = none
 
+# Prefer readable FirstOrDefault()/LastOrDefault() over count checks and indexing.
+dotnet_code_quality.CA1826.exclude_ordefault_methods = true
+
 # Keep readable calls such as ToList(); do not suggest collection expressions.
 dotnet_diagnostic.IDE0305.severity = none
+
+# Prefer [] for empty collections. Preserve constructors with comparers or capacity.
+# IDE0306 also covers nonempty collections, so keep it silent rather than require rewrites.
+dotnet_style_prefer_collection_expression = when_types_exactly_match:silent
+dotnet_diagnostic.IDE0301.severity = warning
+dotnet_diagnostic.IDE0306.severity = silent
+
+# Keep explicit backing fields when they make property logic easier to read.
+dotnet_diagnostic.IDE0032.severity = none
+
+# Choose if/else or ?: by readability; do not require conditional expressions.
+dotnet_diagnostic.IDE0045.severity = none
+dotnet_diagnostic.IDE0046.severity = none
+
+# Use System.Threading.Lock for dedicated synchronous lock fields.
+dotnet_diagnostic.IDE0330.severity = warning
 
 # --- Naming conventions ---
 # Private instance fields: _camelCase (DI dependencies, state).
@@ -114,3 +133,6 @@ indent_size = 2
 [tests/**/*.cs]
 # Group assertions when appropriate; do not require multiple-assert scopes in every test.
 dotnet_diagnostic.NUnit2045.severity = none
+
+# Keep readable First()/Last() assertions in tests; production analysis is unchanged.
+dotnet_diagnostic.CA1826.severity = none

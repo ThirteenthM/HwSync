@@ -3,7 +3,7 @@ using System.Windows;
 using HwSync.Windows.AppServices.Client;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace HwSync.Windows.Client.Host
+namespace HwSync.Windows.Client.Application
 {
     /// <summary>
     /// Запуск WPF-оболочки и управление контейнером зависимостей.

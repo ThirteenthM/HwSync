@@ -13,7 +13,7 @@ namespace HwSync.Infrastructure.FileSystem
         /// </summary>
         public async Task<IReadOnlyList<FileCopyResult>> CopyAsync(string clientRoot, IReadOnlyCollection<FileSnapshot> files, Func<FileSnapshot, Stream, CancellationToken, Task> download, CancellationToken cancellationToken)
         {
-            List<FileCopyResult> results = new();
+            List<FileCopyResult> results = [];
             foreach (FileSnapshot file in files)
             {
                 cancellationToken.ThrowIfCancellationRequested();

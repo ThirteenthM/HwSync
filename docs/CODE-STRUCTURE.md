@@ -10,8 +10,8 @@
 - HwSync.Windows.Server.Host — Windows-запуск сервера, параметры консоли/службы и настройки окружения.
 - HwSync.Server.AppServices — общая регистрация серверных служб, запуск миграций и фоновый обработчик очереди.
 - HwSync.Api.Client — HTTP-клиент и контроль прогресса передачи.
-- HwSync.Windows.Client.Host — WPF-окна клиента синхронизации, запуск и получение служб через DI.
-- HwSync.Windows.Admin.Host — отдельное WPF-приложение просмотра настроек сервера и похоронной книги.
+- HwSync.Windows.Client.Application — WPF-окна клиента синхронизации, запуск и получение служб через DI.
+- HwSync.Windows.Admin.Application — отдельное WPF-приложение просмотра настроек сервера и похоронной книги.
 - HwSync.Windows.Contract — контракты клиента синхронизации и утилиты управления, разделённые на Common, Client и Administration.
 - HwSync.Windows.AppServices — реализации загрузчиков, модели представления, метрики и регистрация служб.
 
@@ -39,24 +39,48 @@ ReconciliationPlanner — отдельная подготовленная час
 
 ## Зависимости Windows-клиента
 
-Host обращается к модели через IMainViewModel из Contract. При запуске вызывается AddWindowsClientApplication, затем контейнер создаёт окно и его зависимости. В Host нет конструирования загрузчиков, HTTP-клиентов и файловых служб.
+Windows-приложение клиента обращается к модели через IMainViewModel из Contract. При запуске вызывается AddWindowsClientApplication, затем контейнер создаёт окно и его зависимости. В оболочке приложения нет конструирования загрузчиков, HTTP-клиентов и файловых служб.
 
-AppServices ссылается на Contract, Api.Client и Infrastructure. Contract ссылается только на общие модели Abstractions; WPF и CommunityToolkit.Mvvm ему не нужны. Оба проекта библиотек используют net10.0, WPF включён только в Host.
+AppServices ссылается на Contract, Api.Client и Infrastructure. Contract ссылается только на общие модели Abstractions; WPF и CommunityToolkit.Mvvm ему не нужны. Оба проекта библиотек используют net10.0, WPF включён только в Windows-приложениях.
 
 Загрузчики зарегистрированы как IConfigurationReader<T>. Конфигурация и модель живут в контейнере до закрытия приложения. Файловые зависимости MainViewModel передаются через IFileSnapshotProvider, IComparedFileOperations, ISourceFileReader и IMissingFileSynchronizer. Общий FileCopyResult находится в Abstractions.Models.
 
-appsettings.json и sync-profiles.json остались рядом с запускаемым exe и исходниками Host. Файлы конфигурации и имена параметров не изменились.
+appsettings.json и sync-profiles.json остались рядом с запускаемым exe и исходниками Windows-приложения клиента. Файлы конфигурации и имена параметров не изменились.
 ## Хранение SQLite
 
-HwSync.Persistence.Sqlite реализует существующие интерфейсы хранения снимков, событий удаления и подтверждённых состояний. HwSync.Persistence.Sqlite.Migrations содержит версии схемы и транзакционное обновление базы. Оба Host используют SQLite через DI. Сервер применяет миграции в SqliteStartupService до обработки заданий; клиент — в ClientStorageBootstrap.Initialize до открытия окна. Тестовая JSON-история не переносится.
+HwSync.Persistence.Sqlite реализует существующие интерфейсы хранения снимков, событий удаления и подтверждённых состояний. HwSync.Persistence.Sqlite.Migrations содержит версии схемы и транзакционное обновление базы. Серверный Host и приложение клиента используют SQLite через DI. Сервер применяет миграции в SqliteStartupService до обработки заданий; клиент — в ClientStorageBootstrap.Initialize до открытия окна. Тестовая JSON-история не переносится.
 
 Порядок подключения и развития схемы описан в SQLITE-STORAGE.md.
 
 ## Общие библиотеки Windows-приложений
 
 Windows-часть состоит из HwSync.Windows.Contract, HwSync.Windows.AppServices и двух точек запуска:
-HwSync.Windows.Client.Host и HwSync.Windows.Admin.Host.
+HwSync.Windows.Client.Application и HwSync.Windows.Admin.Application.
 В общих библиотеках код разделён по назначению: Common, Client, Administration.
 Пользователь управления и участник синхронизации — разные сущности.
 Common/Configuration/JsonConfigurationReader используется обоими приложениями.
 Инструкция первого запуска утилиты: WINDOWS-ADMIN.md.
+
+## Инициализация пустых коллекций
+
+Для пустых коллекций используем [] вместо new(), если тип поддерживает выражения коллекций:
+например, List<T> items = []; и ObservableCollection<T> Items { get; } = [];.
+При известном целевом типе пустые массивы также записываем как [].
+
+Конструкторы с компаратором, ёмкостью или другими параметрами сохраняем.
+Stack<T> не поддерживает этот синтаксис, поэтому для него остаётся new().
+Если целевой тип отсутствует (например, свойство анонимного объекта), допустим Array.Empty<T>().
+Вызовы ToList() сохраняем: правило пустой инициализации не требует заменять их на [.. source].
+
+В .editorconfig задано предпочтение выражений коллекций при точном совпадении типов.
+IDE0301 проверяет пустые коллекции; IDE0306 оставлен silent, поскольку он также предлагает
+переписывать непустые коллекции. IDE0305 по-прежнему отключён.
+
+## Синхронные блокировки
+
+Для отдельного поля, используемого только в lock, выбираем System.Threading.Lock:
+private readonly System.Threading.Lock _gate = new();.
+Блоки lock (_gate) сохраняются. Правило IDE0330 включено в .editorconfig.
+
+Объекты, участвующие в Monitor.Wait/Pulse или других операциях Monitor, не заменяем
+механически: для них сначала проверяем весь протокол синхронизации.

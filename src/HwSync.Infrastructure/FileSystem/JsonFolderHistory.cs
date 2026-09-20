@@ -11,8 +11,9 @@ namespace HwSync.Infrastructure.FileSystem
     /// </summary>
     public sealed class JsonFolderHistory : IFolderHistory
     {
+        private static readonly JsonSerializerOptions SerializerOptions = CreateSerializerOptions();
         private readonly string _directory;
-        private readonly object _gate = new();
+        private readonly System.Threading.Lock _gate = new();
 
         /// <summary>
         /// Задаёт каталог хранения метаданных папок.
@@ -52,10 +53,7 @@ namespace HwSync.Infrastructure.FileSystem
                 string temporary = path + "." + Guid.NewGuid().ToString("N") + ".tmp";
                 try
                 {
-                    File.WriteAllText(temporary, JsonSerializer.Serialize(next, new JsonSerializerOptions
-                    {
-                        WriteIndented = true
-                    }));
+                    File.WriteAllText(temporary, JsonSerializer.Serialize(next, SerializerOptions));
                     File.Move(temporary, path, true);
                 }
                 finally
@@ -93,6 +91,14 @@ namespace HwSync.Infrastructure.FileSystem
             string key = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(root.ToUpperInvariant())));
             return Path.Combine(_directory, key + ".json");
         }
+
+        /// <summary>
+        /// Создаёт общие параметры сериализации истории.
+        /// </summary>
+        private static JsonSerializerOptions CreateSerializerOptions() => new()
+        {
+            WriteIndented = true
+        };
 
         /// <summary>
         /// Читает историю папки либо создаёт пустое исходное состояние.

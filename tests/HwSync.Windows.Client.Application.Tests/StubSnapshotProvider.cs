@@ -1,7 +1,7 @@
 using HwSync.Abstractions.FileSystem;
 using HwSync.Abstractions.Models;
 
-namespace HwSync.Windows.Client.Host.Tests
+namespace HwSync.Windows.Client.Application.Tests
 {
     /// <summary>
     /// Поставщик снимка для тестов модели формы.

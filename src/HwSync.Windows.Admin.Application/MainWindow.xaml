@@ -1,4 +1,4 @@
-<Window x:Class="HwSync.Windows.Admin.Host.MainWindow"
+<Window x:Class="HwSync.Windows.Admin.Application.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="HwSync — управление сервером" Width="1200" Height="850"
@@ -47,7 +47,7 @@
                 <StackPanel Grid.Column="1" Margin="0,0,16,0">
                     <TextBlock Text="Персональный ключ доступа" Margin="0,0,0,6" />
                     <PasswordBox x:Name="AccessKey" PasswordChanged="AccessKeyChanged" Padding="8"
-                                 IsEnabled="{Binding IsIdle}" AutomationProperties.Name="Персональный ключ доступа" />
+                                 IsEnabled="{Binding IsIdle}" ToolTip="При запуске ключ загружается из HWSYNC_ADMIN_ACCESS_TOKEN. Здесь можно ввести другой ключ." AutomationProperties.Name="Персональный ключ доступа" />
                 </StackPanel>
                 <Button Grid.Column="2" Content="Подключить / обновить" Command="{Binding ConnectCommand}" VerticalAlignment="Bottom" Margin="0" />
             </Grid>

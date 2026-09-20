@@ -123,7 +123,7 @@ namespace HwSync.Persistence.Sqlite.Tests
             history.RecordSnapshot(root, [file]);
             Assert.That(history.GetDeletedFiles(root).Single().Deleted, Is.False);
             history.RecordSnapshot(root, []);
-            Assert.That(history.GetDeletedFiles(root).Count, Is.EqualTo(2));
+            Assert.That(history.GetDeletedFiles(root), Has.Count.EqualTo(2));
             Assert.That(history.GetDeletedFiles(root).Last().ChangeNumber, Is.EqualTo(2));
         }
 

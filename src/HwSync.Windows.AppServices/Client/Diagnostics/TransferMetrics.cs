@@ -10,7 +10,7 @@ namespace HwSync.Windows.AppServices.Client.Diagnostics
     public sealed class TransferMetrics : ITransferMetrics
     {
         private readonly Stopwatch _clock = Stopwatch.StartNew();
-        private readonly ObservableCollection<FileTransferMeasurement> _files = new();
+        private readonly ObservableCollection<FileTransferMeasurement> _files = [];
         private long _confirmedBytes;
         private int _completedFiles;
 

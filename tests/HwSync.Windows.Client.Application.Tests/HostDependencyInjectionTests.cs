@@ -5,10 +5,10 @@ using HwSync.Windows.AppServices.Client;
 using HwSync.Windows.Contract.Client.Configuration;
 using HwSync.Windows.Contract.Client.Services;
 using HwSync.Windows.Contract.Client.ViewModels;
-using HwSync.Windows.Client.Host;
+using HwSync.Windows.Client.Application;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace HwSync.Windows.Client.Host.Tests
+namespace HwSync.Windows.Client.Application.Tests
 {
     /// <summary>
     /// Проверки сборки Windows-клиента из контрактов и реализаций через DI.

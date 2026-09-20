@@ -31,9 +31,9 @@ namespace HwSync.Windows.AppServices.Administration
         private FolderRow? _selectedFolder;
         private long? _nextCursor;
 
-        public ObservableCollection<SettingRow> Settings { get; } = new();
-        public ObservableCollection<FolderRow> Folders { get; } = new();
-        public ObservableCollection<DeletionRow> Deletions { get; } = new();
+        public ObservableCollection<SettingRow> Settings { get; } = [];
+        public ObservableCollection<FolderRow> Folders { get; } = [];
+        public ObservableCollection<DeletionRow> Deletions { get; } = [];
         public ICommand ConnectCommand => _connect;
         public ICommand LoadHistoryCommand => _history;
         public ICommand LoadMoreCommand => _more;

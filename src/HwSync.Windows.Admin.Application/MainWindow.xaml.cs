@@ -1,7 +1,7 @@
 using System.Windows;
 using HwSync.Windows.Contract.Administration;
 
-namespace HwSync.Windows.Admin.Host
+namespace HwSync.Windows.Admin.Application
 {
     /// <summary>
     /// Оболочка просмотра серверных данных с моделью из DI.

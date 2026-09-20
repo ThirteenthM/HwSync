@@ -38,7 +38,7 @@ namespace HwSync.Persistence.Sqlite
             Set(command, "SELECT folder_id FROM folders WHERE root_path=$root", ("$root", root));
             string folderId = (string)command.ExecuteScalar()!;
             Set(command, "SELECT relative_path, size, modified_utc FROM file_snapshots WHERE folder_id=$folder", ("$folder", folderId));
-            List<FileSnapshot> previous = new();
+            List<FileSnapshot> previous = [];
             using (SqliteDataReader reader = command.ExecuteReader())
             {
                 while (reader.Read())
@@ -95,7 +95,7 @@ namespace HwSync.Persistence.Sqlite
                 SELECT relative_path, active, deleted_utc, event_number, previous_size, previous_modified_utc
                 FROM deletion_events WHERE folder_id=$folder ORDER BY event_number
                 """, ("$folder", folderId));
-            List<DeletedFile> files = new();
+            List<DeletedFile> files = [];
             using SqliteDataReader reader = command.ExecuteReader();
             while (reader.Read())
             {

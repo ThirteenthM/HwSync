@@ -60,7 +60,7 @@ namespace HwSync.Windows.AppServices.Client.ViewModels
         private string _jobId = "—";
         private bool _busy;
         private bool _cancelRequested;
-        private IReadOnlyList<ChangeRow> _changes = Array.Empty<ChangeRow>();
+        private IReadOnlyList<ChangeRow> _changes = [];
 
         /// <summary>
         /// Связывает команды формы с API и чтением локальных снимков.

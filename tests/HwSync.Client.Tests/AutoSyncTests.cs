@@ -308,7 +308,7 @@ namespace HwSync.Client.Tests
             Assert.That(api.Replaced, Is.EqualTo(decision == FileSyncDecision.ReplaceOnServer ? "local conflict" : null));
             Assert.That(api.Preserved, Is.EqualTo(decision == FileSyncDecision.KeepBoth ? "local conflict" : null));
             string[] backups = Directory.GetFiles(root, "*client-conflict*");
-            Assert.That(backups.Length, Is.EqualTo(decision == FileSyncDecision.KeepBoth ? 1 : 0));
+            Assert.That(backups, Has.Length.EqualTo(decision == FileSyncDecision.KeepBoth ? 1 : 0));
             if (backups.Length > 0)
             {
                 Assert.That(File.ReadAllText(backups[0]), Is.EqualTo("local conflict"));

@@ -4,7 +4,7 @@ using System.Windows;
 using HwSync.Windows.AppServices.Administration;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace HwSync.Windows.Admin.Host
+namespace HwSync.Windows.Admin.Application
 {
     /// <summary>
     /// Запуск отдельной WPF-утилиты администрирования.

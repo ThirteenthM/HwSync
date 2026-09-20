@@ -1,4 +1,4 @@
-<Application x:Class="HwSync.Windows.Client.Host.App"
+<Application x:Class="HwSync.Windows.Client.Application.App"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
     <Application.Resources />

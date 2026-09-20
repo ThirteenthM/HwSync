@@ -5,7 +5,7 @@ using HwSync.Persistence.Sqlite;
 using HwSync.Persistence.Sqlite.Migrations;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace HwSync.Windows.Client.Host
+namespace HwSync.Windows.Client.Application
 {
     /// <summary>
     /// Подключение собственной SQLite-базы Windows-клиента.

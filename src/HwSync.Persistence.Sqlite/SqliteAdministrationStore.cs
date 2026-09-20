@@ -33,7 +33,7 @@ namespace HwSync.Persistence.Sqlite
                 FROM folders f ORDER BY f.root_path
                 """;
             using SqliteDataReader reader = command.ExecuteReader();
-            List<RegisteredFolder> folders = new();
+            List<RegisteredFolder> folders = [];
             while (reader.Read())
             {
                 folders.Add(new(reader.GetString(0), reader.GetString(1), reader.GetInt64(2), reader.GetInt64(3)));
@@ -71,7 +71,7 @@ namespace HwSync.Persistence.Sqlite
             command.Parameters.AddWithValue("$after", after);
             command.Parameters.AddWithValue("$limit", limit);
             using SqliteDataReader reader = command.ExecuteReader();
-            List<DeletionEntry> entries = new();
+            List<DeletionEntry> entries = [];
             while (reader.Read())
             {
                 entries.Add(new(reader.GetInt64(0), reader.GetString(1), reader.GetString(2),

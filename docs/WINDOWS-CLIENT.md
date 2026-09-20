@@ -13,10 +13,10 @@ dotnet run --project src/HwSync.Windows.Server.Host -- --console
 2. В другом терминале запустите клиент:
 
 ```powershell
-dotnet run --project src/HwSync.Windows.Client.Host
+dotnet run --project src/HwSync.Windows.Client.Application
 ```
 
-В Visual Studio можно назначить HwSync.Windows.Server.Host и HwSync.Windows.Client.Host несколькими стартовыми проектами. Либо запустить Host отдельно, а клиент выбрать стартовым проектом и нажать F5.
+В Visual Studio можно назначить HwSync.Windows.Server.Host и HwSync.Windows.Client.Application несколькими стартовыми проектами. Либо запустить Host отдельно, а клиент выбрать стартовым проектом и нажать F5.
 
 ## Работа
 
@@ -36,17 +36,17 @@ dotnet run --project src/HwSync.Windows.Client.Host
 ## Проекты
 
 - HwSync.Api.Client: IHwSyncApiClient и реализация через HttpClient. Зависит только от HwSync.Api.Contracts; поддерживает CancellationToken, строковые перечисления JSON и HTTP-ошибки, включая ProblemDetails. Переданный HttpClient принадлежит вызывающему коду и не уничтожается библиотекой.
-- HwSync.Windows.Client.Host: WPF-окна, запуск и контейнер DI. Главное окно принимает IMainViewModel.
+- HwSync.Windows.Client.Application: WPF-окна, запуск и контейнер DI. Главное окно принимает IMainViewModel.
 - HwSync.Windows.Contract: настройки, перечисления, данные формы и интерфейсы. Без зависимости от WPF и реализаций клиента.
 - HwSync.Windows.AppServices: загрузчики конфигурации, MainViewModel, метрики и регистрация реализаций через AddWindowsClientApplication. Контейнер управляет временем жизни модели и HTTP-клиентов.
-- HwSync.Client.Tests: проверки стратегии, конфигурации, ViewModel, передачи файлов и DI без окна; net10.0, ссылка только на Application.
-- HwSync.Windows.Client.Host.Tests: проверки компоновки окна и его создания через DI; net10.0-windows, WPF и ссылка на Host.
+- HwSync.Client.Tests: проверки стратегии, конфигурации, ViewModel, передачи файлов и DI без окна; net10.0, ссылка только на AppServices.
+- HwSync.Windows.Client.Application.Tests: проверки компоновки окна и его создания через DI; net10.0-windows, WPF и ссылки на Windows-приложения.
 - HwSync.Windows.Server.Host.Tests: интеграционные проверки библиотеки клиента против реального локального HTTP API.
 
 Для отдельного запуска приложению нужен .NET 10 Desktop Runtime. Пример публикации с включённым runtime:
 
 ```powershell
-dotnet publish src/HwSync.Windows.Client.Host -c Release -r win-x64 --self-contained true -o artifacts/windows-client
+dotnet publish src/HwSync.Windows.Client.Application -c Release -r win-x64 --self-contained true -o artifacts/windows-client
 ```
 
 Адрес допускает HTTP/HTTPS и базовый путь. Проверка TLS-сертификатов не отключается. Сам сервер пока принимает только локальные подключения: полноценный сетевой доступ потребует HTTPS, аутентификации и прав доступа. Клиент не снимает серверное ограничение.
@@ -57,7 +57,7 @@ dotnet publish src/HwSync.Windows.Client.Host -c Release -r win-x64 --self-conta
 
 ## Настройки при запуске
 
-Клиент загружает appsettings.json рядом со своим exe (независимо от рабочего каталога). При разработке редактируйте src/HwSync.Windows.Client.Host/appsettings.json: файл копируется при сборке и публикации.
+Клиент загружает appsettings.json рядом со своим exe (независимо от рабочего каталога). При разработке редактируйте src/HwSync.Windows.Client.Application/appsettings.json: файл копируется при сборке и публикации.
 
 ```json
 {

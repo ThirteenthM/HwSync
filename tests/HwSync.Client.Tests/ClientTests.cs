@@ -192,14 +192,12 @@ namespace HwSync.Client.Tests
             /// </summary>
             public Task<ScanJobResponse> GetScanAsync(Guid id, CancellationToken cancellationToken = default)
             {
-                if (FailPoll)
-                {
-                    throw new HttpRequestException("offline");
-                }
-                return Task.FromResult(Job(ScanJobState.Completed) with
-                {
-                    Changes = [new(FileChangeKind.Created, null, new("sample.txt", 7, DateTime.UtcNow))]
-                });
+                return FailPoll
+                    ? throw new HttpRequestException("offline")
+                    : Task.FromResult(Job(ScanJobState.Completed) with
+                    {
+                        Changes = [new(FileChangeKind.Created, null, new("sample.txt", 7, DateTime.UtcNow))]
+                    });
             }
 
             /// <summary>

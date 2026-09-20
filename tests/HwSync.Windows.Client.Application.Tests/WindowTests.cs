@@ -4,11 +4,11 @@ using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using HwSync.Api.Client;
 using HwSync.Api.Contracts;
-using HwSync.Windows.Client.Host;
+using HwSync.Windows.Client.Application;
 using HwSync.Windows.AppServices.Client.ViewModels;
 using HwSync.Windows.Contract.Client.ViewModels;
 
-namespace HwSync.Windows.Client.Host.Tests
+namespace HwSync.Windows.Client.Application.Tests
 {
     /// <summary>
     /// Проверки размещения результатов в окне клиента.
@@ -41,7 +41,7 @@ namespace HwSync.Windows.Client.Host.Tests
                 content.Arrange(new Rect(0, 0, 1000, 800));
                 content.UpdateLayout();
                 Assert.That(content.ActualWidth, Is.EqualTo(1000 - content.Margin.Left - content.Margin.Right));
-                Assert.That(model.Changes.Count, Is.EqualTo(3));
+                Assert.That(model.Changes, Has.Count.EqualTo(3));
                 string? output = Environment.GetEnvironmentVariable("HWSYNC_CLIENT_PREVIEW");
                 if (output is not null)
                 {

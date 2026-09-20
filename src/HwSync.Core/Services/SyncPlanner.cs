@@ -18,7 +18,7 @@ namespace HwSync.Core.Services
             {
                 throw new ArgumentOutOfRangeException(nameof(mode));
             }
-            List<SyncPlanItem> items = new();
+            List<SyncPlanItem> items = [];
             HashSet<string> paths = new(StringComparer.OrdinalIgnoreCase);
             foreach (FileChange change in changes)
             {

@@ -1,4 +1,4 @@
-<Window x:Class="HwSync.Windows.Client.Host.ConflictWindow"
+<Window x:Class="HwSync.Windows.Client.Application.ConflictWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Разобрать конфликт" Width="700" SizeToContent="Height" ResizeMode="NoResize"

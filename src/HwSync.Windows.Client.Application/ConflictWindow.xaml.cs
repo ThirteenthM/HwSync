@@ -1,7 +1,7 @@
 using System.Windows;
 using HwSync.Windows.Contract.Client.ViewModels;
 
-namespace HwSync.Windows.Client.Host
+namespace HwSync.Windows.Client.Application
 {
     /// <summary>
     /// Просмотр атрибутов конфликтующих версий и выбор решения.

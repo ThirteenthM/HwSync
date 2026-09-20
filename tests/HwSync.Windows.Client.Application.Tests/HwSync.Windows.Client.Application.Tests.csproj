@@ -20,8 +20,8 @@
     <Using Include="NUnit.Framework" />
   </ItemGroup>
 
-  <ItemGroup><ProjectReference Include="../../src/HwSync.Windows.Client.Host/HwSync.Windows.Client.Host.csproj" /></ItemGroup>
+  <ItemGroup><ProjectReference Include="../../src/HwSync.Windows.Client.Application/HwSync.Windows.Client.Application.csproj" /></ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="../../src/HwSync.Windows.Admin.Host/HwSync.Windows.Admin.Host.csproj" />
+    <ProjectReference Include="../../src/HwSync.Windows.Admin.Application/HwSync.Windows.Admin.Application.csproj" />
   </ItemGroup>
 </Project>

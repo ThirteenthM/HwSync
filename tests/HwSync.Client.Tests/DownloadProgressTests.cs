@@ -12,6 +12,12 @@ namespace HwSync.Client.Tests
     /// </summary>
     public class DownloadProgressTests
     {
+        private static readonly string[] Expected = new[]
+            {
+                "Копирование 1 из 3: first.txt",
+                "Копирование 3 из 3: third.txt"
+            };
+
         /// <summary>
         /// Проверяет обновление статуса после скачивания и пропуска существующего файла.
         /// </summary>
@@ -28,8 +34,8 @@ namespace HwSync.Client.Tests
                 ClientRootPath = root,
                 RootPath = Path.Combine(root, "server")
             };
-            List<string> downloadStatuses = new();
-            List<string> displayedStatuses = new();
+            List<string> downloadStatuses = [];
+            List<string> displayedStatuses = [];
             api.OnDownload = () => downloadStatuses.Add(model.Status);
             model.PropertyChanged += (_, args) =>
             {
@@ -41,11 +47,7 @@ namespace HwSync.Client.Tests
             await model.StartCommand.ExecuteAsync(null);
             await File.WriteAllTextAsync(Path.Combine(root, "second.txt"), "keep");
             await model.CopyCommand.ExecuteAsync(null);
-            Assert.That(downloadStatuses, Is.EqualTo(new[]
-            {
-                "Копирование 1 из 3: first.txt",
-                "Копирование 3 из 3: third.txt"
-            }));
+            Assert.That(downloadStatuses, Is.EqualTo(Expected));
             Assert.That(displayedStatuses, Does.Contain("Копирование 2 из 3: second.txt"));
             Assert.That(model.Status, Does.Contain("Скопировано: 2. Пропущено или с ошибкой: 1."));
             Assert.That(await File.ReadAllTextAsync(Path.Combine(root, "second.txt")), Is.EqualTo("keep"));
@@ -54,7 +56,7 @@ namespace HwSync.Client.Tests
             if (metricsEnabled)
             {
                 Assert.That(model.TransferMetrics!.ConfirmedBytes, Is.EqualTo(2));
-                Assert.That(model.TransferMetrics.Files.Count, Is.EqualTo(3));
+                Assert.That(model.TransferMetrics.Files, Has.Count.EqualTo(3));
                 Assert.That(model.TransferMetrics.Files[1].ConfirmedBytes, Is.Zero);
                 Assert.That(model.MetricsSummary, Does.Contain("Сервер → клиент"));
             }
@@ -99,6 +101,8 @@ namespace HwSync.Client.Tests
                 get; set;
             }
 
+            private static readonly string[] SourceArray = new[] { "first.txt", "second.txt", "third.txt" };
+
             /// <summary>
             /// Возвращает готовность тестового сервера.
             /// </summary>
@@ -109,8 +113,7 @@ namespace HwSync.Client.Tests
             /// Возвращает завершённое сравнение с тремя серверными файлами.
             /// </summary>
             public Task<ScanJobResponse> StartComparisonAsync(CompareFoldersRequest request, CancellationToken cancellationToken = default) =>
-                Task.FromResult(new ScanJobResponse(Guid.NewGuid(), ScanJobState.Completed, DateTimeOffset.UtcNow, DateTimeOffset.UtcNow,
-                    new[] { "first.txt", "second.txt", "third.txt" }.Select(path =>
+                Task.FromResult(new ScanJobResponse(Guid.NewGuid(), ScanJobState.Completed, DateTimeOffset.UtcNow, DateTimeOffset.UtcNow,SourceArray.Select(path =>
                         new FileChangeDto(FileChangeKind.Created, null, new(path, 1, DateTime.UnixEpoch))).ToArray(), null));
 
             /// <summary>
@@ -132,7 +135,7 @@ namespace HwSync.Client.Tests
             {
                 OnDownload?.Invoke();
                 await Task.Yield();
-                await destination.WriteAsync(new byte[] { 42 }, cancellationToken);
+                await destination.WriteAsync("*"u8.ToArray(), cancellationToken);
             }
         }
     }

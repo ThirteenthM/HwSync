@@ -26,7 +26,7 @@ namespace HwSync.Core.Tests.Services
             {
                 entered.SetResult();
                 release.Wait(stop.Token);
-                return Array.Empty<FileChange>();
+                return [];
             }, stop.Token));
             try
             {
@@ -70,7 +70,7 @@ namespace HwSync.Core.Tests.Services
                 {
                     throw new IOException("private details");
                 }
-                return Array.Empty<FileChange>();
+                return [];
             }, stop.Token));
             try
             {

@@ -41,7 +41,7 @@ namespace HwSync.Windows.AppServices.Client.ViewModels
                     FileSnapshot[] files = comparison.Changes!.Where(change => change.ChangeType == FileChangeKind.Created).Select(change => new FileSnapshot(change.Current!.RelativePath, change.Current.Size, change.Current.LastWriteTimeUtc)).ToArray();
                     Status = $"Копирование отсутствующих файлов: {files.Length}…";
                     IMissingFileSynchronizer synchronizer = _synchronizer;
-                    List<FileCopyResult> results = new();
+                    List<FileCopyResult> results = [];
                     for (int index = 0; index < files.Length; index++)
                     {
                         cancellation.Token.ThrowIfCancellationRequested();

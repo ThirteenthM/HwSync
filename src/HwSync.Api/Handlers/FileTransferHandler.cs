@@ -72,11 +72,10 @@ namespace HwSync.Api.Handlers
             {
                 return new NotFoundResult();
             }
-            if (job.Status != ScanJobStatus.Completed || job.SourceRootPath is null)
-            {
-                return new ConflictResult();
-            }
-            return _history.GetDeletedFiles(job.SourceRootPath).Select(file => new DeletedFileDto(
+
+            return job.Status != ScanJobStatus.Completed || job.SourceRootPath is null
+                ? (ActionResult<IReadOnlyList<DeletedFileDto>>)new ConflictResult()
+                : (ActionResult<IReadOnlyList<DeletedFileDto>>)_history.GetDeletedFiles(job.SourceRootPath).Select(file => new DeletedFileDto(
                 file.RelativePath, file.Deleted, file.DeletedAtUtc, file.ChangeNumber, new(file.PreviousFile.RelativePath, file.PreviousFile.Size, file.PreviousFile.LastWriteTimeUtc))).ToArray();
         }
     }
