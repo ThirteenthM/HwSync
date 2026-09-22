@@ -68,6 +68,8 @@ namespace HwSync.Windows.AppServices.Client.ViewModels
         public MainViewModel(Func<Uri, IHwSyncApiClient> createClient, IFileSnapshotProvider snapshotProvider,
             IComparedFileOperations fileOperations, ISourceFileReader fileReader, IMissingFileSynchronizer synchronizer, HwSync.Windows.Contract.Client.Services.ISyncDecisionService decisions, IConflictFileOperations conflictFiles, IFolderHistory? history = null)
         {
+            SetBatchDecisionCommand = new RelayCommand<BatchDecisionChoice>(SetBatchDecision, choice => CanEditPlan && choice is not null && choice.Paths.Count > 0);
+            SetFileDecisionCommand = new RelayCommand<FileDecisionChoice>(SetFileDecision, CanSetFileDecision);
             _decisions = decisions;
             _conflictFiles = conflictFiles;
             _history = history;
@@ -174,11 +176,12 @@ namespace HwSync.Windows.AppServices.Client.ViewModels
             private set
             {
                 SetProperty(ref _changes, value);
+                RefreshFolders();
                 OnPropertyChanged(nameof(ResultSummary));
             }
         }
 
-        public string ResultSummary => $"Найдено различий: {Changes.Count}";
+        public string ResultSummary => $"Показано: {VisibleChanges.Count}. Одинаковых: {Changes.Count(row => row.IsUnchanged)}. Различий: {Changes.Count(row => !row.IsUnchanged)}. Синхронизация — весь план.";
 
         public bool HasActiveJob => _activeJob.HasValue;
 
@@ -337,6 +340,9 @@ namespace HwSync.Windows.AppServices.Client.ViewModels
         /// </summary>
         private void RefreshCommands()
         {
+            SetFileDecisionCommand.NotifyCanExecuteChanged();
+            SetBatchDecisionCommand.NotifyCanExecuteChanged();
+            OnPropertyChanged(nameof(CanEditPlan));
             ResolveConflictCommand.NotifyCanExecuteChanged();
             AutoSyncCommand.NotifyCanExecuteChanged();
             UploadCommand.NotifyCanExecuteChanged();

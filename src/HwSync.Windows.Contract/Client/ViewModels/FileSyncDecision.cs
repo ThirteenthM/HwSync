@@ -13,6 +13,6 @@ namespace HwSync.Windows.Contract.Client.ViewModels
         DeleteOnClient,
         ReplaceOnClient,
         ReplaceOnServer,
-        KeepBoth
+        KeepBoth, DeleteBoth
     }
 }

@@ -1,5 +1,6 @@
 using System.IO;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using HwSync.Api.Client;
@@ -37,15 +38,38 @@ namespace HwSync.Windows.Client.Application.Tests
             {
                 FrameworkElement content = (FrameworkElement)window.Content;
                 content.DataContext = model;
-                content.Measure(new Size(1000, 800));
-                content.Arrange(new Rect(0, 0, 1000, 800));
+                content.Measure(new Size(1400, 900));
+                content.Arrange(new Rect(0, 0, 1400, 900));
                 content.UpdateLayout();
-                Assert.That(content.ActualWidth, Is.EqualTo(1000 - content.Margin.Left - content.Margin.Right));
+                Assert.That(content.ActualWidth, Is.EqualTo(1400 - content.Margin.Left - content.Margin.Right));
                 Assert.That(model.Changes, Has.Count.EqualTo(3));
+                Button decision = Descendants(content).OfType<Button>().First(button => button.ContextMenu is not null && button.DataContext is ChangeRow);
+                ContextMenu menu = decision.ContextMenu!;
+                decision.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                try
+                {
+                    menu.ApplyTemplate();
+                    menu.Measure(new Size(500, 500));
+                    menu.Arrange(new Rect(0, 0, 500, 500));
+                    menu.UpdateLayout();
+                    Assert.That(menu.Items.Count, Is.GreaterThan(0));
+                    MenuItem skip = Enumerable.Range(0, menu.Items.Count)
+                        .Select(index => (MenuItem)menu.ItemContainerGenerator.ContainerFromIndex(index))
+                        .Single(item => item.CommandParameter is FileDecisionChoice choice && choice.Action == FileSyncDecision.Skip);
+                    Assert.That(skip.Command, Is.SameAs(model.SetFileDecisionCommand));
+                    Assert.That(skip.Command.CanExecute(skip.CommandParameter), Is.True);
+                    skip.Command.Execute(skip.CommandParameter);
+                    Assert.That(model.Changes.Single(row => row.Path == ((FileDecisionChoice)skip.CommandParameter).Path).IsManualDecision, Is.True);
+                }
+                finally
+                {
+                    menu.IsOpen = false;
+                }
+                content.UpdateLayout();
                 string? output = Environment.GetEnvironmentVariable("HWSYNC_CLIENT_PREVIEW");
                 if (output is not null)
                 {
-                    RenderTargetBitmap bitmap = new(1000, 800, 96, 96, PixelFormats.Pbgra32);
+                    RenderTargetBitmap bitmap = new(1400, 900, 96, 96, PixelFormats.Pbgra32);
                     bitmap.Render(content);
                     PngBitmapEncoder encoder = new();
                     encoder.Frames.Add(BitmapFrame.Create(bitmap));
@@ -59,6 +83,21 @@ namespace HwSync.Windows.Client.Application.Tests
             }
         }
 
+        /// <summary>
+        /// Обходит визуальные элементы для проверки привязок формы.
+        /// </summary>
+        private static IEnumerable<DependencyObject> Descendants(DependencyObject parent)
+        {
+            for (int index = 0; index < VisualTreeHelper.GetChildrenCount(parent); index++)
+            {
+                DependencyObject child = VisualTreeHelper.GetChild(parent, index);
+                yield return child;
+                foreach (DependencyObject descendant in Descendants(child))
+                {
+                    yield return descendant;
+                }
+            }
+        }
         /// <summary>
         /// Подставной API-клиент с данными для проверки окна.
         /// </summary>

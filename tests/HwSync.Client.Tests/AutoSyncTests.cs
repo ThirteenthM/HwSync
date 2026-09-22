@@ -16,6 +16,228 @@ namespace HwSync.Client.Tests
     public sealed class AutoSyncTests
     {
         /// <summary>
+        /// Удаляет все имеющиеся копии только после подтверждения общего действия.
+        /// </summary>
+        [TestCase(false)]
+        [TestCase(true)]
+        public async Task DeleteBoth_RequiresConfirmation(bool confirmed)
+        {
+            string root = CreateDirectory();
+            TestClient api = new() { EqualConflict = true };
+            using MainViewModel model = CreateModel(root, api, new());
+            await model.StartCommand.ExecuteAsync(null);
+            model.SetBatchDecisionCommand.Execute(new(model.Changes.Select(row => row.Path).ToArray(), FileSyncDecision.DeleteBoth));
+            model.ConfirmDeletion = (side, paths) =>
+            {
+                Assert.That(side, Does.Contain("на сервере и клиенте"));
+                Assert.That(paths, Has.Count.EqualTo(3));
+                return confirmed;
+            };
+            Assert.That(File.Exists(Path.Combine(root, "conflict.txt")), Is.True);
+            await model.AutoSyncCommand.ExecuteAsync(null);
+            Assert.That(api.Deletions, Is.EqualTo(confirmed ? 2 : 0));
+            Assert.That(File.Exists(Path.Combine(root, "conflict.txt")), Is.EqualTo(!confirmed));
+            Assert.That(File.Exists(Path.Combine(root, "client.txt")), Is.EqualTo(!confirmed));
+            Assert.That(model.Error, Is.Empty);
+        }
+
+        /// <summary>
+        /// Сохраняет изменённую клиентскую копию и сообщает о частичном удалении.
+        /// </summary>
+        [TestCase(false)]
+        [TestCase(true)]
+        public async Task DeleteBoth_ReportsIncompleteOperation(bool serverFailure)
+        {
+            string root = CreateDirectory();
+            string path = Path.Combine(root, "conflict.txt");
+            TestClient api = new()
+            {
+                OnComparedDelete = () =>
+                {
+                    if (serverFailure)
+                    {
+                        throw new IOException("Нет ответа");
+                    }
+
+                    File.WriteAllText(path, "changed during server operation");
+                }
+            };
+            using MainViewModel model = CreateModel(root, api, new());
+            await model.StartCommand.ExecuteAsync(null);
+            foreach (ChangeRow row in model.Changes.ToArray())
+            {
+                model.SetFileDecisionCommand.Execute(new(row.Path,
+                    row.Path == "conflict.txt" ? FileSyncDecision.DeleteBoth : FileSyncDecision.Skip, ""));
+            }
+
+            model.ConfirmDeletion = (_, _) => true;
+            await model.AutoSyncCommand.ExecuteAsync(null);
+            Assert.That(File.Exists(path), Is.True);
+            Assert.That(model.Error, Does.Contain(serverFailure
+                ? "удаление на сервере не подтверждено" : "серверная копия удалена"));
+            Assert.That(model.AutoSyncCommand.CanExecute(null), Is.False);
+        }
+        /// <summary>
+        /// Одинаковые файлы видны, не становятся конфликтом и не требуют копирования.
+        /// </summary>
+        [Test]
+        public async Task EqualFiles_AreVisibleAndKept()
+        {
+            TestClient api = new() { EqualConflict = true };
+            using MainViewModel model = CreateModel(CreateDirectory(), api, new());
+            await model.StartCommand.ExecuteAsync(null);
+            ChangeRow equal = model.Changes.Single(row => row.IsUnchanged);
+            Assert.That(equal.Kind, Is.EqualTo("Одинаковые"));
+            Assert.That(equal.Action, Is.EqualTo(FileSyncDecision.Skip));
+            Assert.That(equal.IsConflict, Is.False);
+            Assert.That(model.VisibleChanges, Does.Contain(equal));
+            Assert.That(equal.ActionChoices.Select(choice => choice.Action), Does.Contain(FileSyncDecision.DeleteOnClient));
+            Assert.That(equal.ActionChoices.Select(choice => choice.Action), Does.Not.Contain(FileSyncDecision.KeepBoth));
+            model.ShowUnchanged = false;
+            Assert.That(model.VisibleChanges, Does.Not.Contain(equal));
+            Assert.That(model.Changes, Does.Contain(equal));
+            model.ShowUnchanged = true;
+            Assert.That(model.VisibleChanges, Does.Contain(equal));
+            await model.AutoSyncCommand.ExecuteAsync(null);
+            Assert.That(api.Preserved, Is.Null);
+            Assert.That(api.Downloads, Is.EqualTo(1));
+            Assert.That(model.Error, Is.Empty);
+        }
+        /// <summary>
+        /// Массовое копирование выбирает замену и пропускает отсутствующий источник.
+        /// </summary>
+        [TestCase(FileSyncDecision.CopyToClient, FileSyncDecision.ReplaceOnClient, "server.txt", "client.txt")]
+        [TestCase(FileSyncDecision.CopyToServer, FileSyncDecision.ReplaceOnServer, "client.txt", "server.txt")]
+        public async Task BatchDecision_UpdatesApplicableRows(FileSyncDecision direction, FileSyncDecision replacement, string copied, string skipped)
+        {
+            TestClient api = new();
+            using MainViewModel model = CreateModel(CreateDirectory(), api, new());
+            await model.StartCommand.ExecuteAsync(null);
+            FileSyncDecision original = model.Changes.Single(row => row.Path == skipped).Action;
+            model.SetBatchDecisionCommand.Execute(new(model.Changes.Select(row => row.Path).ToArray(), direction));
+            Assert.That(model.Changes.Single(row => row.Path == copied).Action, Is.EqualTo(direction));
+            Assert.That(model.Changes.Single(row => row.Path == "conflict.txt").Action, Is.EqualTo(replacement));
+            Assert.That(model.Changes.Single(row => row.Path == skipped).Action, Is.EqualTo(original));
+            Assert.That(model.Status, Does.Contain("Обновлено: 2. Неприменимо: 1"));
+            Assert.That(api.Downloads, Is.Zero);
+            Assert.That(api.Uploaded, Is.Null);
+            Assert.That(api.Deletions, Is.Zero);
+        }
+
+        /// <summary>
+        /// Не меняет скрытые строки даже при переданных устаревших путях выделения.
+        /// </summary>
+        [Test]
+        public async Task BatchDecision_RejectsHiddenSelection()
+        {
+            using MainViewModel model = CreateModel(CreateDirectory(), new(), new());
+            await model.StartCommand.ExecuteAsync(null);
+            ChangeRow[] original = model.Changes.ToArray();
+            model.SelectedFolderPath = "other";
+            model.SetBatchDecisionCommand.Execute(new(original.Select(row => row.Path).ToArray(), FileSyncDecision.Skip));
+            Assert.That(model.Changes, Is.EqualTo(original));
+            Assert.That(model.Status, Does.Contain("Обновлено: 0. Неприменимо: 3"));
+        }
+        /// <summary>
+        /// Различает соседние папки и сохраняет решения при фильтрации.
+        /// </summary>
+        [Test]
+        public async Task Folders_FilterWithoutChangingPlan()
+        {
+            using MainViewModel model = CreateModel(CreateDirectory(), new(), new());
+            await model.StartCommand.ExecuteAsync(null);
+            ChangeRow[] rows =
+            [
+                new("server", "root.txt", null, 1),
+                new("server", "docs/file.txt", null, 1),
+                new("client", "docs/nested/file.txt", 1, null),
+                new("client", "docs-other/file.txt", 1, null)
+            ];
+            typeof(MainViewModel).GetProperty(nameof(MainViewModel.Changes))!.SetValue(model, rows);
+            Assert.That(model.Folders.Single().Children.Select(folder => folder.RelativePath),
+                Is.EqualTo(new[] { "docs", "docs-other" }));
+            model.SelectedFolderPath = "docs";
+            Assert.That(model.VisibleChanges.Select(row => row.Path),
+                Is.EqualTo(new[] { "docs/file.txt", "docs/nested/file.txt" }));
+            model.IncludeSubfolders = false;
+            Assert.That(model.VisibleChanges.Single().Path, Is.EqualTo("docs/file.txt"));
+            model.SetFileDecisionCommand.Execute(new("docs/file.txt", FileSyncDecision.Skip, ""));
+            model.SelectedFolderPath = "docs-other";
+            model.SelectedFolderPath = "docs";
+            Assert.That(model.VisibleChanges.Single().IsManualDecision, Is.True);
+            Assert.That(model.Changes, Has.Count.EqualTo(4));
+            model.SelectedFolderPath = "";
+            Assert.That(model.VisibleChanges.Single().Path, Is.EqualTo("root.txt"));
+            model.IncludeSubfolders = true;
+            Assert.That(model.VisibleChanges, Has.Count.EqualTo(4));
+        }
+
+        /// <summary>
+        /// Выполняет полный план даже при скрытых фильтром строках.
+        /// </summary>
+        [Test]
+        public async Task Folders_HiddenRowsRemainInExecutionPlan()
+        {
+            string root = CreateDirectory();
+            TestClient api = new();
+            using MainViewModel model = CreateModel(root, api, new() { ClientOnlyFiles = SyncRule.Copy, DifferentFiles = SyncRule.AskUser });
+            await model.StartCommand.ExecuteAsync(null);
+            model.SelectedFolderPath = "empty";
+            Assert.That(model.VisibleChanges, Is.Empty);
+            await model.AutoSyncCommand.ExecuteAsync(null);
+            Assert.That(api.Uploaded, Is.EqualTo("client"));
+            Assert.That(File.ReadAllText(Path.Combine(root, "server.txt")), Is.EqualTo("server"));
+            Assert.That(model.Error, Is.Empty);
+        }
+        /// <summary>
+        /// Ручной выбор привязан к пути и не выполняет файловые операции.
+        /// </summary>
+        [Test]
+        public async Task RowDecision_ChangesOnlySelectedPath()
+        {
+            TestClient api = new();
+            using MainViewModel model = CreateModel(CreateDirectory(), api, new());
+            await model.StartCommand.ExecuteAsync(null);
+            typeof(MainViewModel).GetProperty(nameof(MainViewModel.Changes))!
+                .SetValue(model, model.Changes.Reverse().ToArray());
+            model.SetFileDecisionCommand.Execute(new("server.txt", FileSyncDecision.Skip, ""));
+            Assert.That(model.Changes.Single(row => row.Path == "server.txt").Action, Is.EqualTo(FileSyncDecision.Skip));
+            Assert.That(model.Changes.Count(row => row.IsManualDecision), Is.EqualTo(1));
+            Assert.That(api.Downloads, Is.Zero);
+            Assert.That(api.Deletions, Is.Zero);
+            Assert.That(model.SetFileDecisionCommand.CanExecute(new("server.txt", FileSyncDecision.CopyToServer, "")), Is.False);
+            Assert.That(model.SetFileDecisionCommand.CanExecute(new("missing.txt", FileSyncDecision.Skip, "")), Is.False);
+        }
+
+        /// <summary>
+        /// Удаляет выбранную версию только после подтверждения.
+        /// </summary>
+        [TestCase(FileSyncDecision.DeleteOnClient, false)]
+        [TestCase(FileSyncDecision.DeleteOnClient, true)]
+        [TestCase(FileSyncDecision.DeleteOnServer, false)]
+        [TestCase(FileSyncDecision.DeleteOnServer, true)]
+        public async Task RowDecision_DeletesSelectedVersion(FileSyncDecision decision, bool confirmed)
+        {
+            string root = CreateDirectory();
+            TestClient api = new();
+            using MainViewModel model = CreateModel(root, api, new());
+            await model.StartCommand.ExecuteAsync(null);
+            foreach (ChangeRow row in model.Changes.ToArray())
+            {
+                model.SetFileDecisionCommand.Execute(new(row.Path,
+                    row.Path == "conflict.txt" ? decision : FileSyncDecision.Skip, ""));
+            }
+
+            model.ConfirmDeletion = (_, _) => confirmed;
+            await model.AutoSyncCommand.ExecuteAsync(null);
+            Assert.That(model.Error, Is.Empty);
+            Assert.That(api.Deletions, Is.EqualTo(confirmed && decision == FileSyncDecision.DeleteOnServer ? 1 : 0));
+            Assert.That(api.Verifications, Is.EqualTo(confirmed && decision == FileSyncDecision.DeleteOnClient ? 1 : 0));
+            Assert.That(File.Exists(Path.Combine(root, "conflict.txt")), Is.EqualTo(!confirmed || decision != FileSyncDecision.DeleteOnClient));
+            Assert.That(File.Exists(Path.Combine(root, "client.txt")), Is.True);
+            Assert.That(api.Downloads, Is.Zero);
+        }
+        /// <summary>
         /// Проверяет направление и безопасный пропуск при разных правилах.
         /// </summary>
         [TestCase(false, true, SyncRule.Copy, FileSyncDecision.CopyToClient)]
@@ -358,8 +580,30 @@ namespace HwSync.Client.Tests
         /// <summary>
         /// Сервер сравнения и файловых операций без сетевых запросов.
         /// </summary>
-        private sealed class TestClient : IHwSyncApiClient, IFileDownloadClient, IFileMutationClient, IConflictFileClient
+        private sealed class TestClient : IHwSyncApiClient, IFileDownloadClient, IFileMutationClient, IConflictFileClient, IComparedFileMutationClient
         {
+            /// <summary>
+            /// Подтверждает актуальность серверной версии.
+            /// </summary>
+            public Task EnsureServerFileUnchangedAsync(Guid jobId, string relativePath, CancellationToken token)
+            {
+                Verifications++;
+                return Task.CompletedTask;
+            }
+
+            /// <summary>
+            /// Регистрирует удаление сравниваемой версии.
+            /// </summary>
+            public Task DeleteComparedServerFileAsync(Guid jobId, string relativePath, CancellationToken token)
+            {
+                OnComparedDelete?.Invoke();
+                Deletions++;
+                return Task.CompletedTask;
+            }
+            public Action? OnComparedDelete { get; init; }
+
+            public bool EqualConflict { get; init; }
+
             public string? Replaced { get; private set; }
 
             public string? Preserved { get; private set; }
@@ -394,7 +638,7 @@ namespace HwSync.Client.Tests
                     DateTimeOffset.UtcNow, DateTimeOffset.UtcNow,
                     [new(FileChangeKind.Created, null, new("server.txt", 6, DateTime.UtcNow)),
                      new(FileChangeKind.Deleted, local, null),
-                     new(FileChangeKind.Modified, conflict, new("conflict.txt", 8, DateTime.UtcNow))], null));
+                     new(EqualConflict ? FileChangeKind.Unchanged : FileChangeKind.Modified, conflict, EqualConflict ? conflict : new("conflict.txt", 8, DateTime.UtcNow))], null));
             }
 
             /// <summary>

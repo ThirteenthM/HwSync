@@ -52,6 +52,20 @@ namespace HwSync.Api.Controllers
             handler.ExecuteAsync(id, relativePath, FileMutationOperation.Delete, Stream.Null, HttpContext.RequestAborted);
 
         /// <summary>
+        /// Удаляет серверную версию двустороннего различия после ручного выбора.
+        /// </summary>
+        [HttpDelete("{id:guid}/compared-file")]
+        public Task<IActionResult> DeleteCompared(Guid id, string relativePath, [FromServices] FileMutationHandler handler) =>
+            handler.ExecuteAsync(id, relativePath, FileMutationOperation.DeleteCompared, Stream.Null, HttpContext.RequestAborted);
+
+        /// <summary>
+        /// Проверяет актуальность серверной версии перед удалением клиентской.
+        /// </summary>
+        [HttpPost("{id:guid}/verify-unchanged")]
+        public Task<IActionResult> VerifyUnchanged(Guid id, string relativePath, [FromServices] FileMutationHandler handler) =>
+            handler.ExecuteAsync(id, relativePath, FileMutationOperation.VerifyUnchanged, Stream.Null, HttpContext.RequestAborted);
+
+        /// <summary>
         /// Проверяет отсутствие серверной копии перед удалением на клиенте.
         /// </summary>
         [HttpPost("{id:guid}/verify-missing")]

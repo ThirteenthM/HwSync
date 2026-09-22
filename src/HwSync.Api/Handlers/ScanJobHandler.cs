@@ -89,6 +89,7 @@ namespace HwSync.Api.Handlers
                 {
                     FileChangeType.Created => FileChangeKind.Created,
                     FileChangeType.Modified => FileChangeKind.Modified,
+                    FileChangeType.Unchanged => FileChangeKind.Unchanged,
                     FileChangeType.Deleted => FileChangeKind.Deleted,
                     _ => throw new ArgumentOutOfRangeException(nameof(job))
                 }, ToDto(change.Previous), ToDto(change.Current))).ToArray(), job.Error);

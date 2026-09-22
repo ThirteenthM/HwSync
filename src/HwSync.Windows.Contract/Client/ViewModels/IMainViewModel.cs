@@ -22,6 +22,16 @@ namespace HwSync.Windows.Contract.Client.ViewModels
 
         IReadOnlyList<ChangeRow> Changes { get; }
 
+        IReadOnlyList<ChangeRow> VisibleChanges { get; }
+
+        IReadOnlyList<FolderNode> Folders { get; }
+
+        string SelectedFolderPath { get; set; }
+
+        bool IncludeSubfolders { get; set; }
+
+        bool ShowUnchanged { get; set; }
+
         string Status { get; }
 
         string Error { get; }
@@ -51,6 +61,12 @@ namespace HwSync.Windows.Contract.Client.ViewModels
         Func<ChangeRow, FileSyncDecision?>? ChooseConflictResolution { get; set; }
 
         ICommand ResolveConflictCommand { get; }
+
+        bool CanEditPlan { get; }
+
+        ICommand SetFileDecisionCommand { get; }
+
+        ICommand SetBatchDecisionCommand { get; }
 
         ICommand AutoSyncCommand { get; }
 

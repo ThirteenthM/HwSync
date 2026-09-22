@@ -51,9 +51,9 @@ namespace HwSync.Windows.AppServices.Client.ViewModels
                 Error = "Выбранное действие не поддерживается для этого конфликта.";
                 return;
             }
-            Changes = Changes.Select(item => item == row ? item with { Action = decision.Value } : item).ToArray();
+            Changes = Changes.Select(item => item == row ? item with { Action = decision.Value, IsManualDecision = true } : item).ToArray();
             Error = "";
-            Status = "Решение добавлено в план. Для выполнения нажмите «Автосинхронизация».";
+            Status = "Решение добавлено в план. Для выполнения нажмите «Синхронизировать».";
             RefreshCommands();
         }
 

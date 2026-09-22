@@ -11,14 +11,16 @@ namespace HwSync.Api.Handlers
     {
         private readonly IScanJobService _jobs;
         private readonly IComparedFileOperations _files;
+        private readonly ISourceFileReader _reader;
 
         /// <summary>
         /// Принимает хранилище заданий и файловые операции.
         /// </summary>
-        public FileMutationHandler(IScanJobService jobs, IComparedFileOperations files)
+        public FileMutationHandler(IScanJobService jobs, IComparedFileOperations files, ISourceFileReader reader)
         {
             _jobs = jobs;
             _files = files;
+            _reader = reader;
         }
 
         /// <summary>
@@ -36,8 +38,13 @@ namespace HwSync.Api.Handlers
                 return new ConflictResult();
             }
 
-            FileChangeType kind = operation == FileMutationOperation.Delete ? FileChangeType.Created : FileChangeType.Deleted;
-            FileChange? change = job.Changes?.FirstOrDefault(item => item.ChangeType == kind
+            FileChangeType kind = operation switch
+            {
+                FileMutationOperation.Delete => FileChangeType.Created,
+                FileMutationOperation.DeleteCompared or FileMutationOperation.VerifyUnchanged => FileChangeType.Modified,
+                _ => FileChangeType.Deleted
+            };
+            FileChange? change = job.Changes?.FirstOrDefault(item => (item.ChangeType == kind || kind == FileChangeType.Modified && item.ChangeType == FileChangeType.Unchanged)
                 && (item.Current ?? item.Previous)?.RelativePath == relativePath);
 
             if (change is null)
@@ -51,9 +58,13 @@ namespace HwSync.Api.Handlers
                 {
                     await _files.CopyMissingAsync(job.SourceRootPath, change.Previous!, body, token);
                 }
-                else if (operation == FileMutationOperation.Delete)
+                else if (operation is FileMutationOperation.Delete or FileMutationOperation.DeleteCompared)
                 {
                     _files.DeleteUnchanged(job.SourceRootPath, change.Current!);
+                }
+                else if (operation == FileMutationOperation.VerifyUnchanged)
+                {
+                    using Stream source = _reader.OpenRead(job.SourceRootPath, change.Current!);
                 }
                 else
                 {

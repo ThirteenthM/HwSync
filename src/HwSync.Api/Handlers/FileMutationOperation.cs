@@ -5,6 +5,6 @@ namespace HwSync.Api.Handlers
     /// </summary>
     public enum FileMutationOperation
     {
-        Upload, Delete, VerifyMissing
+        Upload, Delete, VerifyMissing, DeleteCompared, VerifyUnchanged
     }
 }

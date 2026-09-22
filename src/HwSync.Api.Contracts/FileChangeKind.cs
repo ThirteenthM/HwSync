@@ -5,6 +5,6 @@ namespace HwSync.Api.Contracts
     /// </summary>
     public enum FileChangeKind
     {
-        Created, Modified, Deleted
+        Created, Modified, Deleted, Unchanged
     }
 }

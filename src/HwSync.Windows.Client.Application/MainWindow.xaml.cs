@@ -12,6 +12,43 @@ namespace HwSync.Windows.Client.Application
         private readonly IMainViewModel _viewModel;
 
         /// <summary>
+        /// Передаёт выбранные пути общей команде редактирования плана.
+        /// </summary>
+        private void BatchDecisionClick(object sender, RoutedEventArgs e)
+        {
+            if (sender is System.Windows.Controls.MenuItem item
+                && Enum.TryParse(item.Tag as string, out FileSyncDecision action))
+            {
+                string[] paths = ResultsGrid.SelectedItems.OfType<ChangeRow>().Select(row => row.Path).ToArray();
+                BatchDecisionChoice choice = new(paths, action);
+                if (_viewModel.SetBatchDecisionCommand.CanExecute(choice))
+                {
+                    _viewModel.SetBatchDecisionCommand.Execute(choice);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Сбрасывает выделение при смене папки или режима вложенности.
+        /// </summary>
+        private void ClearFilteredSelection(object? sender, PropertyChangedEventArgs e)
+        {
+            if (e.PropertyName is nameof(IMainViewModel.SelectedFolderPath) or nameof(IMainViewModel.IncludeSubfolders) or nameof(IMainViewModel.ShowUnchanged))
+            {
+                ResultsGrid.UnselectAll();
+            }
+        }
+        /// <summary>
+        /// Передаёт выбранную папку фильтру модели.
+        /// </summary>
+        private void FolderSelectionChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
+        {
+            if (DataContext is IMainViewModel model && e.NewValue is FolderNode folder)
+            {
+                model.SelectedFolderPath = folder.RelativePath;
+            }
+        }
+        /// <summary>
         /// Связывает окно с моделью и подтверждением удаления.
         /// </summary>
         public MainWindow(IMainViewModel viewModel)
@@ -19,8 +56,22 @@ namespace HwSync.Windows.Client.Application
             InitializeComponent();
             _viewModel = viewModel;
             DataContext = viewModel;
+            viewModel.PropertyChanged += ClearFilteredSelection;
+            Closed += (_, _) => viewModel.PropertyChanged -= ClearFilteredSelection;
             viewModel.ConfirmDeletion = ConfirmDeletion;
             viewModel.ChooseConflictResolution = ChooseConflictResolution;
+        }
+
+        /// <summary>
+        /// Открывает меню действий строки обычным нажатием.
+        /// </summary>
+        private void DecisionButtonClick(object sender, RoutedEventArgs e)
+        {
+            if (sender is System.Windows.Controls.Button button && button.ContextMenu is not null)
+            {
+                button.ContextMenu.PlacementTarget = button;
+                button.ContextMenu.IsOpen = true;
+            }
         }
 
         /// <summary>
@@ -72,11 +123,11 @@ namespace HwSync.Windows.Client.Application
             {
                 Content = "Удалить",
                 Padding = new Thickness(16, 8, 16, 8),
-                Margin = new Thickness(8, 0, 0, 0)
+                Margin = new Thickness(0, 0, 8, 0)
             };
             confirm.Click += (_, _) => dialog.DialogResult = true;
-            buttons.Children.Add(cancel);
             buttons.Children.Add(confirm);
+            buttons.Children.Add(cancel);
             System.Windows.Controls.DockPanel.SetDock(buttons, System.Windows.Controls.Dock.Bottom);
             panel.Children.Add(buttons);
             panel.Children.Add(new System.Windows.Controls.ListBox

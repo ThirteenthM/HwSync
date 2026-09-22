@@ -88,7 +88,7 @@ namespace HwSync.Core.Tests.Services
         /// Проверяет отсутствие различий у одинаковых снимков.
         /// </summary>
         [Test]
-        public void Compare_WhenFileIsUnchanged_ReturnsNoChanges()
+        public void Compare_WhenFileIsUnchanged_ReturnsBothSnapshots()
         {
             FileSnapshot[] previous = [CreateSnapshot()];
             FileSnapshot[] current = [CreateSnapshot()];
@@ -98,7 +98,7 @@ namespace HwSync.Core.Tests.Services
             IReadOnlyCollection<FileChange> changes =
                 comparer.Compare(previous, current);
 
-            Assert.That(changes, Is.Empty);
+            Assert.That(changes.Single(), Is.EqualTo(new FileChange(FileChangeType.Unchanged, previous[0], current[0])));
         }
 
         /// <summary>

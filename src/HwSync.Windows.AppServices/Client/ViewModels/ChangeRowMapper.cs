@@ -15,6 +15,7 @@ namespace HwSync.Windows.AppServices.Client.ViewModels
         {
             FileChangeKind.Created => "Только на сервере",
             FileChangeKind.Modified => "Отличается",
+            FileChangeKind.Unchanged => "Одинаковые",
             FileChangeKind.Deleted => "Только на клиенте",
             _ => "Неизвестно"
         }, change.Current?.RelativePath ?? change.Previous?.RelativePath ?? "", change.Previous?.Size, change.Current?.Size);

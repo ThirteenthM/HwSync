@@ -9,7 +9,7 @@ namespace HwSync.Core.Services
     public sealed class ChangeComparer : IChangeComparer
     {
         /// <summary>
-        /// Возвращает только новые, изменённые и исчезнувшие файлы.
+        /// Возвращает результат сравнения для всех файлов, включая одинаковые.
         /// </summary>
         public IReadOnlyCollection<FileChange> Compare(
             IReadOnlyCollection<FileSnapshot> previous,
@@ -34,6 +34,10 @@ namespace HwSync.Core.Services
                 {
                     // у текущего файла есть предыдущий и они различаются.
                     changes.Add(new(FileChangeType.Modified, Previous: previousFile, Current: currentFile));
+                }
+                else
+                {
+                    changes.Add(new(FileChangeType.Unchanged, Previous: previousFile, Current: currentFile));
                 }
             }
 

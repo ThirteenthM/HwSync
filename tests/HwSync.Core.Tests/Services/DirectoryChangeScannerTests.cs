@@ -32,7 +32,8 @@ namespace HwSync.Core.Tests.Services
             [
                 new(FileChangeType.Deleted, deleted, null),
                 new(FileChangeType.Modified, previousModified, currentModified),
-                new(FileChangeType.Created, null, created)
+                new(FileChangeType.Created, null, created),
+                new(FileChangeType.Unchanged, unchanged, unchanged)
             ];
 
             Assert.Multiple(() =>
@@ -70,7 +71,7 @@ namespace HwSync.Core.Tests.Services
                 {
                     new(FileChangeType.Created, null, first)
                 }));
-                Assert.That(secondChanges, Is.Empty);
+                Assert.That(secondChanges.Single(), Is.EqualTo(new FileChange(FileChangeType.Unchanged, second, second)));
                 Assert.That(provider.RequestedRootPaths,
                     Is.EqualTo(new[]
 {

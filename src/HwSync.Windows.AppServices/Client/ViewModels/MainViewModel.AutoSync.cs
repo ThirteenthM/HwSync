@@ -18,9 +18,13 @@ namespace HwSync.Windows.AppServices.Client.ViewModels
             && Changes.Any(row => IsExecutable(row.Action))
             && Changes.All(row => row.Action switch
             {
+                FileSyncDecision.DeleteBoth => row.PreviousSize.HasValue && row.CurrentSize.HasValue
+                    ? _jobClient is IComparedFileMutationClient : _jobClient is IFileMutationClient,
                 FileSyncDecision.CopyToClient or FileSyncDecision.ReplaceOnClient => _jobClient is IFileDownloadClient,
                 FileSyncDecision.ReplaceOnServer => _jobClient is IConflictFileClient,
                 FileSyncDecision.KeepBoth => _jobClient is IConflictFileClient && _jobClient is IFileDownloadClient,
+                FileSyncDecision.DeleteOnClient or FileSyncDecision.DeleteOnServer when row.PreviousSize.HasValue && row.CurrentSize.HasValue
+                    => _jobClient is IComparedFileMutationClient,
                 FileSyncDecision.CopyToServer or FileSyncDecision.DeleteOnClient or FileSyncDecision.DeleteOnServer => _jobClient is IFileMutationClient,
                 _ => true
             });
@@ -29,7 +33,7 @@ namespace HwSync.Windows.AppServices.Client.ViewModels
         /// Отличает файловую операцию от пропуска и нерешённого конфликта.
         /// </summary>
         private static bool IsExecutable(FileSyncDecision action) => action is FileSyncDecision.CopyToClient
-            or FileSyncDecision.CopyToServer or FileSyncDecision.DeleteOnClient or FileSyncDecision.DeleteOnServer or FileSyncDecision.ReplaceOnClient or FileSyncDecision.ReplaceOnServer or FileSyncDecision.KeepBoth;
+            or FileSyncDecision.CopyToServer or FileSyncDecision.DeleteOnClient or FileSyncDecision.DeleteOnServer or FileSyncDecision.ReplaceOnClient or FileSyncDecision.ReplaceOnServer or FileSyncDecision.KeepBoth or FileSyncDecision.DeleteBoth;
 
         /// <summary>
         /// Выполняет показанный план, пропуская вопросы и оставленные файлы.
@@ -55,6 +59,12 @@ namespace HwSync.Windows.AppServices.Client.ViewModels
                 return;
             }
 
+            if (Changes.Any(row => !row.ActionChoices.Any(choice => choice.Action == row.Action)))
+            {
+                Error = "План содержит действие, неприменимое к файлу. Повторите сравнение.";
+                return;
+            }
+
             Dictionary<string, FileSyncDecision> decisionsByPath = Changes.ToDictionary(
                 row => row.Path, row => row.Action, StringComparer.Ordinal);
             (FileChangeDto Change, FileSyncDecision Action)[] plan = comparison.Changes
@@ -64,12 +74,13 @@ namespace HwSync.Windows.AppServices.Client.ViewModels
                 .Where(item => IsExecutable(item.Action)).ToArray();
             int unresolved = Changes.Count(row => row.Action == FileSyncDecision.AskUser);
             int skipped = Changes.Count(row => row.Action == FileSyncDecision.Skip);
-            foreach (FileSyncDecision deletion in new[] { FileSyncDecision.DeleteOnServer, FileSyncDecision.DeleteOnClient })
+            foreach (FileSyncDecision deletion in new[] { FileSyncDecision.DeleteOnServer, FileSyncDecision.DeleteOnClient, FileSyncDecision.DeleteBoth })
             {
                 string[] paths = plan.Where(item => item.Action == deletion)
                     .Select(item => (item.Change.Current ?? item.Change.Previous)!.RelativePath).ToArray();
                 if (paths.Length > 0 && ConfirmDeletion?.Invoke(
-                    deletion == FileSyncDecision.DeleteOnServer ? "на сервере" : "на клиенте", paths) != true)
+                    deletion == FileSyncDecision.DeleteBoth ? "на сервере и клиенте (все имеющиеся копии)"
+                        : deletion == FileSyncDecision.DeleteOnServer ? "на сервере" : "на клиенте", paths) != true)
                 {
                     return;
                 }
@@ -94,9 +105,20 @@ namespace HwSync.Windows.AppServices.Client.ViewModels
                         FileSnapshotDto snapshot = (change.Current ?? change.Previous)!;
                         FileSnapshot file = new(snapshot.RelativePath, snapshot.Size, snapshot.LastWriteTimeUtc);
                         Status = $"Автосинхронизация {completed + alreadyExists + 1} из {plan.Length}: {file.RelativePath}";
-                        if (action is FileSyncDecision.ReplaceOnClient or FileSyncDecision.ReplaceOnServer or FileSyncDecision.KeepBoth)
+                        if (action == FileSyncDecision.DeleteBoth)
+                        {
+                            await DeleteBothAsync(comparison.Id, change, cancellation.Token);
+                            completed++;
+                        }
+                        else if (action is FileSyncDecision.ReplaceOnClient or FileSyncDecision.ReplaceOnServer or FileSyncDecision.KeepBoth)
                         {
                             await ApplyConflictAsync(comparison.Id, change, action, cancellation.Token);
+                            completed++;
+                        }
+                        else if (change.Previous is not null && change.Current is not null
+                            && action is FileSyncDecision.DeleteOnClient or FileSyncDecision.DeleteOnServer)
+                        {
+                            await DeleteComparedVersionAsync(comparison.Id, change, action, cancellation.Token);
                             completed++;
                         }
                         else if (await ApplyPlannedActionAsync(comparison.Id, file, action, cancellation.Token))

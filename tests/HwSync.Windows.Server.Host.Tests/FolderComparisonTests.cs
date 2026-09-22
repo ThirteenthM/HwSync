@@ -59,7 +59,9 @@ namespace HwSync.Windows.Server.Host.Tests
                     job = await api.GetScanAsync(job.Id, timeout.Token);
                 }
                 Assert.That(job.Status, Is.EqualTo(ScanJobState.Completed));
-                Assert.That(job.Changes, Has.Count.EqualTo(3));
+                Assert.That(job.Changes, Has.Count.EqualTo(4));
+                Assert.That(job.Changes!.Single(change => change.ChangeType == FileChangeKind.Unchanged).Previous,
+                    Is.EqualTo(job.Changes!.Single(change => change.ChangeType == FileChangeKind.Unchanged).Current));
                 FileChangeDto created = job.Changes!.Single(change => change.ChangeType == FileChangeKind.Created);
                 FileChangeDto deleted = job.Changes!.Single(change => change.ChangeType == FileChangeKind.Deleted);
                 FileChangeDto modified = job.Changes!.Single(change => change.ChangeType == FileChangeKind.Modified);

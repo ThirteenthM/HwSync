@@ -32,6 +32,8 @@ namespace HwSync.Core.Services
                 }
                 SyncAction action = change.ChangeType switch
                 {
+                    FileChangeType.Unchanged when change.Previous is not null && change.Current is not null
+                        && change.Previous.RelativePath == change.Current.RelativePath => SyncAction.KeepOnClient,
                     FileChangeType.Created when change.Previous is null && change.Current is not null => SyncAction.CopyToClient,
                     FileChangeType.Modified when change.Previous is not null && change.Current is not null
                         && change.Previous.RelativePath == change.Current.RelativePath => mode == SyncMode.CopyMissing ? SyncAction.KeepOnClient : SyncAction.ReplaceOnClient,

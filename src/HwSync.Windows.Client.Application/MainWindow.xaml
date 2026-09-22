@@ -1,7 +1,8 @@
 <Window x:Class="HwSync.Windows.Client.Application.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="HwSync — сравнение папок" Width="1060" Height="840" MinWidth="820" MinHeight="740"
+        xmlns:models="clr-namespace:HwSync.Windows.Contract.Client.ViewModels;assembly=HwSync.Windows.Contract"
+        Title="HwSync — сравнение папок" Width="1400" Height="900" MinWidth="1060" MinHeight="740"
         WindowStartupLocation="CenterScreen" Background="#F3F5F8" FontFamily="Segoe UI" FontSize="14">
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BoolToVisibility"/>
@@ -46,17 +47,27 @@
                 <TextBlock Text="Адрес сервера" Margin="0,0,0,6"/>
                 <TextBox Grid.Row="1" Text="{Binding ServerAddress, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding CanEditConnection}" AutomationProperties.Name="Адрес сервера" />
                 <Button Grid.Row="1" Grid.Column="1" Content="Проверить связь" Command="{Binding ConnectCommand}" Margin="12,0,0,0"/>
-                <TextBlock Grid.Row="2" Text="Каталог на сервере (абсолютный путь)" Margin="0,14,0,6"/>
-                <TextBox Grid.Row="3" Grid.ColumnSpan="2" Text="{Binding RootPath, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding CanEditConnection}" AutomationProperties.Name="Каталог на сервере" />
-                <TextBlock Grid.Row="4" Text="Каталог на клиенте (абсолютный путь)" Margin="0,14,0,6"/>
-                <TextBox Grid.Row="5" Grid.ColumnSpan="2" Text="{Binding ClientRootPath, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding CanEditConnection}" AutomationProperties.Name="Каталог на клиенте"/>
+                <Grid Grid.Row="2" Grid.ColumnSpan="2" Margin="0,14,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <StackPanel Margin="0,0,8,0">
+                        <TextBlock Text="Сервер — слева (абсолютный путь)" Margin="0,0,0,6"/>
+                        <TextBox Text="{Binding RootPath, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding CanEditConnection}" AutomationProperties.Name="Каталог на сервере"/>
+                    </StackPanel>
+                    <StackPanel Grid.Column="1" Margin="8,0,0,0">
+                        <TextBlock Text="Клиент — справа (абсолютный путь)" Margin="0,0,0,6"/>
+                        <TextBox Text="{Binding ClientRootPath, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding CanEditConnection}" AutomationProperties.Name="Каталог на клиенте"/>
+                    </StackPanel>
+                </Grid>
                 <TextBlock Grid.Row="6" Grid.ColumnSpan="2" Text="Сравниваются относительные пути, размеры и время изменения. Файлы не изменяются." Foreground="#58697B" FontSize="12" TextWrapping="Wrap" Margin="0,8,0,0"/>
             </Grid>
         </Border>
         <StackPanel Grid.Row="2" Margin="0,0,0,16">
             <WrapPanel Margin="0,0,0,10">
                 <Button Content="Сравнить папки" Command="{Binding StartCommand}" Background="#214E78" Foreground="White"/>
-                <Button Content="Автосинхронизация" Command="{Binding AutoSyncCommand}" Background="#214E78" Foreground="White"/>
+                <Button Content="Синхронизировать весь план" Command="{Binding AutoSyncCommand}" Background="#214E78" Foreground="White"/>
                 <Button Content="Отменить" Command="{Binding CancelCommand}"/>
                 <Button Content="Продолжить опрос" Command="{Binding ResumeCommand}"/>
             </WrapPanel>
@@ -100,37 +111,141 @@
         <Border Grid.Row="3" Background="White" CornerRadius="8" Padding="12">
             <DockPanel>
                 <TextBlock DockPanel.Dock="Top" Text="{Binding ResultSummary}" FontWeight="SemiBold" Margin="4,0,0,12"/>
-                <DataGrid ItemsSource="{Binding Changes}" AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False"
-                          HeadersVisibility="Column" GridLinesVisibility="Horizontal" BorderThickness="0" RowHeight="32"
+                <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0,0,0,8">
+                    <Button Content="Решение для выбранных" IsEnabled="{Binding CanEditPlan}" Click="DecisionButtonClick">
+                        <Button.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem Header="→ Копировать на клиент (существующие заменить)" Tag="CopyToClient" Click="BatchDecisionClick"/>
+                                <MenuItem Header="← Копировать на сервер (существующие заменить)" Tag="CopyToServer" Click="BatchDecisionClick"/>
+                                <MenuItem Header="Удалить на обеих сторонах" Tag="DeleteBoth" Click="BatchDecisionClick"/>
+                                <MenuItem Header="Удалить на клиенте" Tag="DeleteOnClient" Click="BatchDecisionClick"/>
+                                <MenuItem Header="Удалить на сервере" Tag="DeleteOnServer" Click="BatchDecisionClick"/>
+                                <MenuItem Header="Сохранить обе версии" Tag="KeepBoth" Click="BatchDecisionClick"/>
+                                <MenuItem Header="Ничего не делать" Tag="Skip" Click="BatchDecisionClick"/>
+                                <MenuItem Header="Решить позже" Tag="AskUser" Click="BatchDecisionClick"/>
+                            </ContextMenu>
+                        </Button.ContextMenu>
+                    </Button>
+                    <TextBlock VerticalAlignment="Center" Text="Выбор строк: Ctrl / Shift. Изменяется только план."/>
+                </StackPanel>
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="180" MinWidth="100"/>
+                        <ColumnDefinition Width="6"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <DockPanel Margin="0,0,8,0">
+                        <CheckBox DockPanel.Dock="Top" Content="Показывать одинаковые" IsChecked="{Binding ShowUnchanged}" Margin="0,0,0,8" ToolTip="Совпадают относительный путь, размер и время. Содержимое не проверяется."/>
+                        <CheckBox DockPanel.Dock="Top" Content="С подпапками" IsChecked="{Binding IncludeSubfolders}" Margin="0,0,0,8"/>
+                        <TreeView ItemsSource="{Binding Folders}" SelectedItemChanged="FolderSelectionChanged" BorderThickness="0" AutomationProperties.Name="Папки с различиями">
+                            <TreeView.ItemTemplate>
+                                <HierarchicalDataTemplate ItemsSource="{Binding Children}">
+                                    <TextBlock Text="{Binding Name}" ToolTip="{Binding RelativePath}"/>
+                                </HierarchicalDataTemplate>
+                            </TreeView.ItemTemplate>
+                            <TreeView.ItemContainerStyle>
+                                <Style TargetType="TreeViewItem">
+                                    <Setter Property="IsExpanded" Value="True"/>
+                                </Style>
+                            </TreeView.ItemContainerStyle>
+                        </TreeView>
+                    </DockPanel>
+                    <GridSplitter Grid.Column="1" Width="6" HorizontalAlignment="Stretch"/>
+                <DataGrid x:Name="ResultsGrid" SelectionMode="Extended" SelectionUnit="FullRow" Grid.Column="2" ItemsSource="{Binding VisibleChanges}" AutoGenerateColumns="False" IsReadOnly="True" CanUserAddRows="False"
+                          HeadersVisibility="Column" GridLinesVisibility="Horizontal" BorderThickness="0" RowHeight="34"
                           EnableRowVirtualization="True" EnableColumnVirtualization="True" AutomationProperties.Name="Результаты сканирования">
+                    <DataGrid.CellStyle>
+                        <Style TargetType="DataGridCell">
+                            <Style.Triggers>
+                                <MultiDataTrigger>
+                                    <MultiDataTrigger.Conditions>
+                                        <Condition Binding="{Binding IsUnchanged}" Value="True"/>
+                                        <Condition Binding="{Binding IsSelected, RelativeSource={RelativeSource Self}}" Value="False"/>
+                                    </MultiDataTrigger.Conditions>
+                                    <Setter Property="Foreground" Value="#237A3B"/>
+                                </MultiDataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </DataGrid.CellStyle>
                     <DataGrid.Columns>
-                        <DataGridTemplateColumn Header="Решение" Width="80">
+                        <DataGridTextColumn Header="Папка" Binding="{Binding RelativeFolder}" Width="140"/>
+                        <DataGridTextColumn Header="Сервер — файл" Binding="{Binding ServerPath}" Width="*" MinWidth="175" SortMemberPath="ServerPath"/>
+                        <DataGridTextColumn Header="МБ" Binding="{Binding CurrentSizeMegabytes, StringFormat={}{0:0.000}}" Width="85"/>
+                        <DataGridTextColumn Header="Изменён (UTC)" Binding="{Binding CurrentModifiedUtc, StringFormat=yyyy-MM-dd HH:mm:ss}" Width="165"/>
+                        <DataGridTemplateColumn Header="&lt;=&gt;" Width="100" SortMemberPath="Action">
+                            <DataGridTemplateColumn.CellStyle>
+                                <Style TargetType="DataGridCell">
+                                    <Setter Property="Background" Value="#F0F1F3"/>
+                                    <Setter Property="Foreground" Value="#19324A"/>
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding Action}" Value="{x:Static models:FileSyncDecision.CopyToServer}">
+                                            <Setter Property="Background" Value="#DFECFF"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding Action}" Value="{x:Static models:FileSyncDecision.CopyToClient}">
+                                            <Setter Property="Background" Value="#DFECFF"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding Action}" Value="{x:Static models:FileSyncDecision.ReplaceOnClient}">
+                                            <Setter Property="Background" Value="#DFECFF"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding Action}" Value="{x:Static models:FileSyncDecision.ReplaceOnServer}">
+                                            <Setter Property="Background" Value="#DFECFF"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding Action}" Value="{x:Static models:FileSyncDecision.KeepBoth}">
+                                            <Setter Property="Background" Value="#DFECFF"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding Action}" Value="{x:Static models:FileSyncDecision.DeleteOnServer}">
+                                            <Setter Property="Background" Value="#FDE2E0"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding Action}" Value="{x:Static models:FileSyncDecision.DeleteBoth}">
+                                            <Setter Property="Background" Value="#FDE2E0"/>
+                                        </DataTrigger>
+                                        <DataTrigger Binding="{Binding Action}" Value="{x:Static models:FileSyncDecision.DeleteOnClient}">
+                                            <Setter Property="Background" Value="#FDE2E0"/>
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </DataGridTemplateColumn.CellStyle>
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
-                                    <TextBlock Text="{Binding ActionIcon}" ToolTip="{Binding ActionDescription}"
-                                               AutomationProperties.Name="{Binding ActionDescription}"
-                                               FontSize="20" FontWeight="SemiBold" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                    <Button Content="{Binding ActionIcon}" ToolTip="{Binding ActionDescription}"
+                                            AutomationProperties.Name="{Binding ActionDescription}"
+                                            Tag="{Binding DataContext, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                            IsEnabled="{Binding DataContext.CanEditPlan, RelativeSource={RelativeSource AncestorType=DataGrid}}"
+                                            Click="DecisionButtonClick" Padding="4,0" MinHeight="26" Margin="2" FontSize="16" Background="Transparent" Foreground="#19324A">
+                                        <Button.ContextMenu>
+                                            <ContextMenu ItemsSource="{Binding PlacementTarget.DataContext.ActionChoices, RelativeSource={RelativeSource Self}}">
+                                                <ContextMenu.ItemContainerStyle>
+                                                    <Style TargetType="MenuItem">
+                                                        <Setter Property="Header" Value="{Binding Description}"/>
+                                                        <Setter Property="Command" Value="{Binding PlacementTarget.Tag.SetFileDecisionCommand, RelativeSource={RelativeSource AncestorType=ContextMenu}}"/>
+                                                        <Setter Property="CommandParameter" Value="{Binding}"/>
+                                                    </Style>
+                                                </ContextMenu.ItemContainerStyle>
+                                            </ContextMenu>
+                                        </Button.ContextMenu>
+                                    </Button>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
+                        <DataGridTextColumn Header="Изменён (UTC)" Binding="{Binding PreviousModifiedUtc, StringFormat=yyyy-MM-dd HH:mm:ss}" Width="165"/>
+                        <DataGridTextColumn Header="МБ" Binding="{Binding PreviousSizeMegabytes, StringFormat={}{0:0.000}}" Width="85"/>
+                        <DataGridTextColumn Header="Клиент — файл" Binding="{Binding ClientPath}" Width="*" MinWidth="175" SortMemberPath="ClientPath"/>
+                        <DataGridTextColumn Header="Различие" Binding="{Binding Kind}" Width="145"/>
                         <DataGridTemplateColumn Header="Конфликт" Width="105">
                             <DataGridTemplateColumn.CellTemplate>
                                 <DataTemplate>
                                     <Button Content="Разобрать" Padding="6,2" MinHeight="24" Margin="2"
                                             Visibility="{Binding IsConflict, Converter={StaticResource BoolToVisibility}}"
                                             Command="{Binding DataContext.ResolveConflictCommand, RelativeSource={RelativeSource AncestorType=DataGrid}}"
-                                            CommandParameter="{Binding}"/>
+                                            CommandParameter="{Binding}" ToolTip="{Binding DecisionSource}"/>
                                 </DataTemplate>
                             </DataGridTemplateColumn.CellTemplate>
                         </DataGridTemplateColumn>
-                        <DataGridTextColumn Header="Различие" Binding="{Binding Kind}" Width="150"/>
-                        <DataGridTextColumn Header="Файл" Binding="{Binding Path}" Width="*" MinWidth="180"/>
-                        <DataGridTextColumn Header="Клиент, МБ" Binding="{Binding PreviousSizeMegabytes, StringFormat={}{0:0.000}}" Width="115"/>
-                        <DataGridTextColumn Header="Сервер, МБ" Binding="{Binding CurrentSizeMegabytes, StringFormat={}{0:0.000}}" Width="115"/>
                     </DataGrid.Columns>
                 </DataGrid>
+                </Grid>
             </DockPanel>
         </Border>
-        <TextBlock Grid.Row="4" Text="↑ на сервер · ↓ на клиент · ⇑/⇓ замена · ⇄ обе версии · × удаление · ? нужно решение · — без изменений. Удаление — после подтверждения; после действия повторите сравнение." Foreground="#58697B" FontSize="12" TextWrapping="Wrap" Margin="0,14,0,0"/>
+        <TextBlock Grid.Row="4" Text="Слева — сервер, справа — клиент. Нажмите действие в колонке &lt;=&gt;, чтобы изменить план. → на клиент · ← на сервер · ⇄ обе версии · × удалить выбранную сторону · ? решить позже · = оставить без изменений. Выполнение — по кнопке «Синхронизировать»." Foreground="#58697B" FontSize="12" TextWrapping="Wrap" Margin="0,14,0,0"/>
     </Grid>
 </Window>

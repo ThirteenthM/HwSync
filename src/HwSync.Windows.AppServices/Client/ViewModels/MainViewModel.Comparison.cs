@@ -179,7 +179,8 @@ namespace HwSync.Windows.AppServices.Client.ViewModels
                             DeletedVersionModifiedUtc = evidence?.PreviousFile?.LastWriteTimeUtc,
                             PreviousModifiedUtc = change.Previous?.LastWriteTimeUtc,
                             CurrentModifiedUtc = change.Current?.LastWriteTimeUtc,
-                            Action = _decisions.Decide(change.Previous is null ? null : ToSnapshot(change.Previous),
+                            IsUnchanged = change.ChangeType == FileChangeKind.Unchanged,
+                            Action = change.ChangeType == FileChangeKind.Unchanged ? FileSyncDecision.Skip : _decisions.Decide(change.Previous is null ? null : ToSnapshot(change.Previous),
                                 change.Current is null ? null : ToSnapshot(change.Current), clientDeletion, serverDeletion,
                                 SelectedProfile?.Rules ?? new ConflictRules())
                         };

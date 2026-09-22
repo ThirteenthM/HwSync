@@ -7,6 +7,6 @@ namespace HwSync.Abstractions.Models
     {
         Created,
         Modified,
-        Deleted,
+        Deleted, Unchanged,
     }
 }

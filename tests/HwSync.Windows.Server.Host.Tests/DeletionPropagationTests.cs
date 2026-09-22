@@ -51,8 +51,8 @@ namespace HwSync.Windows.Server.Host.Tests
                 using MainViewModel client2 = CreateClient(root, second, server, "second", api);
                 await client1.StartCommand.ExecuteAsync(null).WaitAsync(timeout.Token);
                 await client2.StartCommand.ExecuteAsync(null).WaitAsync(timeout.Token);
-                Assert.That(client1.Changes, Is.Empty);
-                Assert.That(client2.Changes, Is.Empty);
+                Assert.That(client1.Changes.Single().IsUnchanged, Is.True);
+                Assert.That(client2.Changes.Single().IsUnchanged, Is.True);
                 File.Delete(Path.Combine(removeOnServer ? server : first, "file.txt"));
                 if (changeSecondClient)
                 {

@@ -8,7 +8,7 @@ namespace HwSync.Api.Client
     /// <summary>
     /// HTTP-клиент сравнения папок и передачи файлов.
     /// </summary>
-    public sealed class HwSyncApiClient : IHwSyncApiClient, IFileDownloadClient, IFileMutationClient, IConflictFileClient, IDeletionHistoryClient
+    public sealed class HwSyncApiClient : IHwSyncApiClient, IFileDownloadClient, IFileMutationClient, IConflictFileClient, IDeletionHistoryClient, IComparedFileMutationClient
     {
         private static readonly JsonSerializerOptions JsonOptions = CreateJsonOptions();
         private readonly HttpClient _httpClient;
@@ -97,6 +97,18 @@ namespace HwSync.Api.Client
         /// </summary>
         public Task DeleteServerFileAsync(Guid jobId, string relativePath, CancellationToken token) =>
             MutateAsync(HttpMethod.Delete, jobId, "file", relativePath, null, token);
+
+        /// <summary>
+        /// Проверяет неизменность серверной версии перед локальным удалением.
+        /// </summary>
+        public Task EnsureServerFileUnchangedAsync(Guid jobId, string relativePath, CancellationToken token) =>
+            MutateAsync(HttpMethod.Post, jobId, "verify-unchanged", relativePath, null, token);
+
+        /// <summary>
+        /// Удаляет серверную версию двустороннего различия.
+        /// </summary>
+        public Task DeleteComparedServerFileAsync(Guid jobId, string relativePath, CancellationToken token) =>
+            MutateAsync(HttpMethod.Delete, jobId, "compared-file", relativePath, null, token);
 
         /// <summary>
         /// Проверяет отсутствие файла на сервере перед локальным удалением.
