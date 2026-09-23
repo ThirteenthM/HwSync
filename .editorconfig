@@ -136,3 +136,6 @@ dotnet_diagnostic.NUnit2045.severity = none
 
 # Keep readable First()/Last() assertions in tests; production analysis is unchanged.
 dotnet_diagnostic.CA1826.severity = none
+
+# Keep expected arrays inline in tests instead of extracting static readonly fields.
+dotnet_diagnostic.CA1861.severity = none

@@ -58,7 +58,7 @@ namespace HwSync.Windows.Client.Application
             DataContext = viewModel;
             viewModel.PropertyChanged += ClearFilteredSelection;
             Closed += (_, _) => viewModel.PropertyChanged -= ClearFilteredSelection;
-            viewModel.ConfirmDeletion = ConfirmDeletion;
+            viewModel.ReviewDeletions = ReviewDeletions;
             viewModel.ChooseConflictResolution = ChooseConflictResolution;
         }
 
@@ -83,62 +83,13 @@ namespace HwSync.Windows.Client.Application
             return dialog.ShowDialog() == true ? dialog.Decision : null;
         }
         /// <summary>
-        /// Показывает список удаляемых файлов и ожидает решение пользователя.
+        /// Возвращает выбранные копии либо отмену без изменения плана.
         /// </summary>
-        private bool ConfirmDeletion(string side, IReadOnlyList<string> paths)
+        private IReadOnlyList<DeletionCandidate>? ReviewDeletions(IReadOnlyList<DeletionCandidate> files)
         {
-            Window dialog = new()
-            {
-                Owner = this,
-                Title = "Подтверждение удаления",
-                Width = 680,
-                Height = 460,
-                WindowStartupLocation = WindowStartupLocation.CenterOwner
-            };
-            System.Windows.Controls.DockPanel panel = new()
-            {
-                Margin = new Thickness(16)
-            };
-            System.Windows.Controls.TextBlock description = new()
-            {
-                Text = $"Удалить файлы {side} без помещения в корзину? Всего: {paths.Count}.",
-                TextWrapping = TextWrapping.Wrap,
-                Margin = new Thickness(0, 0, 0, 12)
-            };
-            System.Windows.Controls.DockPanel.SetDock(description, System.Windows.Controls.Dock.Top);
-            panel.Children.Add(description);
-            System.Windows.Controls.StackPanel buttons = new()
-            {
-                Orientation = System.Windows.Controls.Orientation.Horizontal,
-                HorizontalAlignment = HorizontalAlignment.Right
-            };
-            System.Windows.Controls.Button cancel = new()
-            {
-                Content = "Отмена",
-                IsCancel = true,
-                IsDefault = true,
-                Padding = new Thickness(16, 8, 16, 8)
-            };
-            System.Windows.Controls.Button confirm = new()
-            {
-                Content = "Удалить",
-                Padding = new Thickness(16, 8, 16, 8),
-                Margin = new Thickness(0, 0, 8, 0)
-            };
-            confirm.Click += (_, _) => dialog.DialogResult = true;
-            buttons.Children.Add(confirm);
-            buttons.Children.Add(cancel);
-            System.Windows.Controls.DockPanel.SetDock(buttons, System.Windows.Controls.Dock.Bottom);
-            panel.Children.Add(buttons);
-            panel.Children.Add(new System.Windows.Controls.ListBox
-            {
-                ItemsSource = paths,
-                Margin = new Thickness(0, 0, 0, 12)
-            });
-            dialog.Content = panel;
-            return dialog.ShowDialog() == true;
+            DeletionReviewWindow dialog = new(_viewModel, files) { Owner = this };
+            return dialog.ShowDialog() == true ? dialog.SelectedFiles : null;
         }
-
         /// <summary>
         /// Предупреждает о продолжающемся серверном задании.
         /// </summary>

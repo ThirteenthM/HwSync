@@ -57,8 +57,7 @@ namespace HwSync.Windows.AppServices.Client.ViewModels
         /// </summary>
         private void RefreshFolders()
         {
-            SortedSet<string> paths = new(StringComparer.Ordinal);
-            paths.Add("");
+            SortedSet<string> paths = new(StringComparer.Ordinal) { "" };
             foreach (ChangeRow row in Changes)
             {
                 string folder = row.RelativeFolder;

@@ -90,11 +90,21 @@ namespace HwSync.Windows.AppServices.Client.ViewModels
                 return;
             }
 
-            if (operation != ManualFileOperation.Upload && ConfirmDeletion?.Invoke(operation == ManualFileOperation.DeleteServer ? "на сервере" : "на клиенте", files.Select(file => file.RelativePath).ToArray()) != true)
+            if (operation != ManualFileOperation.Upload)
             {
-                return;
-            }
+                FileSyncDecision decision = operation == ManualFileOperation.DeleteServer
+                    ? FileSyncDecision.DeleteOnServer : FileSyncDecision.DeleteOnClient;
+                (FileChangeDto Change, FileSyncDecision Action)[] plan = comparison.Changes!.Where(change => change.ChangeType == kind)
+                    .Select(change => (Change: change, Action: decision)).ToArray();
+                (FileChangeDto Change, FileSyncDecision Action)[]? reviewed = ReviewDeletionPlan(plan);
+                if (reviewed is null)
+                {
+                    return;
+                }
 
+                HashSet<string> selected = new(reviewed.Select(item => (item.Change.Current ?? item.Change.Previous)!.RelativePath), StringComparer.Ordinal);
+                files = files.Where(file => selected.Contains(file.RelativePath)).ToArray();
+            }
             await ExecuteAsync(async () =>
             {
                 _completedComparison = null;

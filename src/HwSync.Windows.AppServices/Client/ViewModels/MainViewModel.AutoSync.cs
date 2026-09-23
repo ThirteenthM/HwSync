@@ -72,20 +72,15 @@ namespace HwSync.Windows.AppServices.Client.ViewModels
                     change.Current?.RelativePath ?? change.Previous?.RelativePath ?? "",
                     FileSyncDecision.AskUser)))
                 .Where(item => IsExecutable(item.Action)).ToArray();
-            int unresolved = Changes.Count(row => row.Action == FileSyncDecision.AskUser);
-            int skipped = Changes.Count(row => row.Action == FileSyncDecision.Skip);
-            foreach (FileSyncDecision deletion in new[] { FileSyncDecision.DeleteOnServer, FileSyncDecision.DeleteOnClient, FileSyncDecision.DeleteBoth })
+            (FileChangeDto Change, FileSyncDecision Action)[]? reviewed = ReviewDeletionPlan(plan);
+            if (reviewed is null)
             {
-                string[] paths = plan.Where(item => item.Action == deletion)
-                    .Select(item => (item.Change.Current ?? item.Change.Previous)!.RelativePath).ToArray();
-                if (paths.Length > 0 && ConfirmDeletion?.Invoke(
-                    deletion == FileSyncDecision.DeleteBoth ? "на сервере и клиенте (все имеющиеся копии)"
-                        : deletion == FileSyncDecision.DeleteOnServer ? "на сервере" : "на клиенте", paths) != true)
-                {
-                    return;
-                }
+                return;
             }
 
+            plan = reviewed;
+            int unresolved = Changes.Count(row => row.Action == FileSyncDecision.AskUser);
+            int skipped = Changes.Count(row => row.Action == FileSyncDecision.Skip);
             await ExecuteAsync(async () =>
             {
                 _completedComparison = null;

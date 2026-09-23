@@ -52,6 +52,13 @@ namespace HwSync.Windows.Contract.Client.ViewModels
 
         Func<string, IReadOnlyList<string>, bool>? ConfirmDeletion { get; set; }
 
+        Func<IReadOnlyList<DeletionCandidate>, IReadOnlyList<DeletionCandidate>?>? ReviewDeletions { get; set; }
+
+        /// <summary>
+        /// Читает небольшую копию файла из текущего сравнения для просмотра.
+        /// </summary>
+        Task<byte[]> LoadDeletionPreviewAsync(DeletionCandidate candidate, CancellationToken token);
+
         ICommand ConnectCommand { get; }
 
         ICommand StartCommand { get; }
