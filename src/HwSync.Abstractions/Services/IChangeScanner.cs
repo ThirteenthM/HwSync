@@ -10,6 +10,6 @@ namespace HwSync.Abstractions.Services
         /// <summary>
         /// Читает папку, сравнивает снимки и обновляет историю.
         /// </summary>
-        IReadOnlyCollection<FileChange> Scan(ChangeScanRequest request);
+        IReadOnlyCollection<FileChange> Scan(ChangeScanRequest request, CancellationToken cancellationToken = default);
     }
 }

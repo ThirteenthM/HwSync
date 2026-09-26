@@ -23,9 +23,10 @@ namespace HwSync.Infrastructure.FileSystem
         /// <summary>
         /// Читает полный снимок и фиксирует обнаруженные изменения.
         /// </summary>
-        public IReadOnlyCollection<FileSnapshot> GetSnapshot(string rootPath)
+        public IReadOnlyCollection<FileSnapshot> GetSnapshot(string rootPath, CancellationToken cancellationToken = default)
         {
-            IReadOnlyCollection<FileSnapshot> snapshot = _source.GetSnapshot(rootPath);
+            IReadOnlyCollection<FileSnapshot> snapshot = _source.GetSnapshot(rootPath, cancellationToken);
+            cancellationToken.ThrowIfCancellationRequested();
             _history.RecordSnapshot(rootPath, snapshot);
             return snapshot;
         }

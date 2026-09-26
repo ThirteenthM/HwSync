@@ -10,5 +10,5 @@ public interface IFileSnapshotProvider
     /// <summary>
     /// Возвращает снимок файлов относительно корневой папки.
     /// </summary>
-    IReadOnlyCollection<FileSnapshot> GetSnapshot(string rootPath);
+    IReadOnlyCollection<FileSnapshot> GetSnapshot(string rootPath, CancellationToken cancellationToken = default);
 }

@@ -77,7 +77,7 @@ HwSync.Windows.Server.Host использует net10.0-windows. В нём ос�
 HwSync.Server.AppServices — библиотека net10.0 без зависимости от Windows-хоста и пакета WindowsServices.
 Она регистрирует общий серверный состав через AddServerAppServices(configuration, defaultDatabasePath).
 Host передаёт путь базы по умолчанию; Storage:DatabasePath по-прежнему может его переопределить.
-SqliteStartupService применяет миграции перед запуском SyncWorker и HTTP-сервера.
+SqliteStartupService применяет миграции перед запуском ScanWorker и HTTP-сервера.
 
 Core, Api, Infrastructure и Persistence.Sqlite сохраняют собственные обязанности.
 В будущем HwSync.Linux.Server.Host сможет подключить тот же AppServices и предоставить настройки
@@ -91,3 +91,7 @@ Core, Api, Infrastructure и Persistence.Sqlite сохраняют собств�
 Имя зарегистрированной службы остаётся HwSync. Исполняемый файл теперь
 HwSync.Windows.Server.Host.exe; для ранее установленной службы при обновлении нужно
 обновить путь к исполняемому файлу. Автоматически существующие службы не изменяются.
+
+ScanWorker связывает очередь с жизненным циклом хоста через BackgroundService. ExecuteAsync явно ожидает IScanJobRunner.RunAsync; отдельный метод Scan создаёт область DI для одного задания и пишет ошибки в журнал. IScanJobService и IScanJobRunner используют один экземпляр ScanJobService.
+
+Токен остановки хоста передаётся через сканер в обход каталогов. Отмена проверяется между файловыми операциями и до записи истории; незавершённый снимок не записывается. Уже начавшийся синхронный системный вызов или запись истории не прерываются принудительно. Отмена отдельного задания через API пока сохраняет прежнее поведение: результат выполняющегося сканирования отбрасывается после его завершения.

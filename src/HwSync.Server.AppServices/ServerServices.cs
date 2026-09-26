@@ -48,9 +48,10 @@ namespace HwSync.Server.AppServices
             services.AddTransient<IChangeComparer, ChangeComparer>();
             services.AddTransient<IChangeScanner, DirectoryChangeScanner>();
             services.AddSingleton<ScanJobService>();
+            services.AddSingleton<IScanJobRunner>(provider => provider.GetRequiredService<ScanJobService>());
             services.AddSingleton<IScanJobService>(provider => provider.GetRequiredService<ScanJobService>());
             services.AddHwSyncApi();
-            services.AddHostedService<SyncWorker>();
+            services.AddHostedService<ScanWorker>();
             return services;
         }
     }

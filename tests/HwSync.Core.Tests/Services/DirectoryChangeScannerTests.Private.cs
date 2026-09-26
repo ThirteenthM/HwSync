@@ -34,7 +34,7 @@ namespace HwSync.Core.Tests.Services
             /// <summary>
             /// Возвращает снимок файлов относительно корневой папки.
             /// </summary>
-            public IReadOnlyCollection<FileSnapshot> GetSnapshot(string rootPath)
+            public IReadOnlyCollection<FileSnapshot> GetSnapshot(string rootPath, CancellationToken cancellationToken = default)
             {
                 RequestedRootPaths.Add(rootPath);
                 return Snapshot;

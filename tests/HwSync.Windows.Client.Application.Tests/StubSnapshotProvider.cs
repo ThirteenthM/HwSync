@@ -11,7 +11,7 @@ namespace HwSync.Windows.Client.Application.Tests
         /// <summary>
         /// Возвращает снимок файлов относительно корневой папки.
         /// </summary>
-        public IReadOnlyCollection<FileSnapshot> GetSnapshot(string rootPath) =>
+        public IReadOnlyCollection<FileSnapshot> GetSnapshot(string rootPath, CancellationToken cancellationToken = default) =>
             [new("client.txt", 12, new DateTime(2026, 9, 16, 0, 0, 0, DateTimeKind.Utc))];
     }
 }

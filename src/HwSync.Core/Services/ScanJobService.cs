@@ -7,7 +7,7 @@ namespace HwSync.Core.Services
     /// <summary>
     /// Ограниченная очередь заданий с хранением результатов в памяти.
     /// </summary>
-    public sealed class ScanJobService : IScanJobService
+    public sealed class ScanJobService : IScanJobService, IScanJobRunner
     {
         private const int Capacity = 100;
         private readonly System.Threading.Lock _gate = new();
@@ -100,7 +100,7 @@ namespace HwSync.Core.Services
         /// <summary>
         /// Последовательно обрабатывает очередь до отмены работы.
         /// </summary>
-        public async Task RunAsync(Func<ChangeScanRequest, IReadOnlyCollection<FileChange>> scan, CancellationToken stoppingToken)
+        public async Task RunAsync(Func<ChangeScanRequest, CancellationToken, IReadOnlyCollection<FileChange>> scan, CancellationToken stoppingToken)
         {
             using CancellationTokenRegistration registration = stoppingToken.Register(Stop);
             try
@@ -126,7 +126,12 @@ namespace HwSync.Core.Services
                     string? error = null;
                     try
                     {
-                        changes = scan(request);
+                        changes = scan(request, stoppingToken);
+                    }
+                    catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
+                    {
+                        // Статус Cancelled выставляется ниже по токену остановки,
+                        // даже если callback Register(Stop) ещё не успел выставить _stopping.
                     }
                     catch (Exception exception)
                     {
@@ -137,7 +142,9 @@ namespace HwSync.Core.Services
                     lock (_gate)
                     {
                         ScanJob job = _jobs[id];
-                        bool cancelled = _stopping || job.Status == ScanJobStatus.CancellationRequested;
+                        bool cancelled = _stopping
+                            || job.Status == ScanJobStatus.CancellationRequested
+                            || stoppingToken.IsCancellationRequested;
                         _jobs[id] = job with
                         {
                             Status = cancelled ? ScanJobStatus.Cancelled : error is null ? ScanJobStatus.Completed : ScanJobStatus.Failed,

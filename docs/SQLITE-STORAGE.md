@@ -12,7 +12,7 @@
 
 SQLite подключён к обоим Host. Существующая тестовая JSON-история не переносится и больше не используется рабочими регистрациями DI. Старые файлы автоматически не удаляются.
 
-Сервер: HostBootstrap регистрирует SqliteDatabase, SqliteMigrator, SqliteFolderHistory и SqliteFolderSyncStateStore. SqliteStartupService вызывает Apply() до запуска SyncWorker и HTTP-сервера. Ошибка миграции прерывает запуск.
+Сервер: HostBootstrap регистрирует SqliteDatabase, SqliteMigrator, SqliteFolderHistory и SqliteFolderSyncStateStore. SqliteStartupService вызывает Apply() до запуска ScanWorker и HTTP-сервера. Ошибка миграции прерывает запуск.
 
 Клиент: ClientStorageBootstrap регистрирует SQLite-хранилища. App.OnStartup вызывает Initialize() до создания MainWindow. Проверяются пути профилей и применяются миграции. При ошибке появляется сообщение, окно не открывается, приложение завершается с кодом 1.
 

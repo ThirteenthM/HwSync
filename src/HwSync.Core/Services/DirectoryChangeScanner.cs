@@ -28,12 +28,13 @@ namespace HwSync.Core.Services
         /// <summary>
         /// Читает папку, сравнивает снимки и обновляет историю.
         /// </summary>
-        public IReadOnlyCollection<FileChange> Scan(ChangeScanRequest request)
+        public IReadOnlyCollection<FileChange> Scan(ChangeScanRequest request, CancellationToken cancellationToken = default)
         {
             IReadOnlyCollection<FileSnapshot> currentSnapshot =
-                _snapshotProvider.GetSnapshot(request.RootPath);
+                _snapshotProvider.GetSnapshot(request.RootPath, cancellationToken);
 
             IReadOnlyCollection<FileChange> changes = _changeComparer.Compare(request.PreviousSnapshot, currentSnapshot);
+            cancellationToken.ThrowIfCancellationRequested();
             _history?.RecordSnapshot(request.RootPath, currentSnapshot);
             return changes;
         }
