@@ -38,7 +38,7 @@ namespace HwSync.Windows.Server.Host.Tests
                     Assert.That(host.Services.GetRequiredService<IFolderSyncStateStore>(), Is.TypeOf<HwSync.Persistence.Sqlite.SqliteFolderSyncStateStore>());
                     using Microsoft.Data.Sqlite.SqliteConnection connection = host.Services.GetRequiredService<HwSync.Persistence.Sqlite.SqliteDatabase>().OpenConnection();
                     using Microsoft.Data.Sqlite.SqliteCommand command = connection.CreateCommand();
-                    command.CommandText = "SELECT count(*) FROM schema_migrations";
+                    command.CommandText = "SELECT count(*) FROM __EFMigrationsHistory";
                     Assert.That(command.ExecuteScalar(), Is.EqualTo(1));
                     Assert.That(host.Services.GetRequiredService<IFileSnapshotProvider>(),
                         Is.TypeOf<DirectorySnapshotProvider>());

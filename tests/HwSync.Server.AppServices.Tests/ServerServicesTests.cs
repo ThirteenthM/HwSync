@@ -40,7 +40,7 @@ namespace HwSync.Server.AppServices.Tests
                 using (SqliteConnection connection = app.Services.GetRequiredService<SqliteDatabase>().OpenConnection())
                 using (SqliteCommand command = connection.CreateCommand())
                 {
-                    command.CommandText = "SELECT count(*) FROM schema_migrations";
+                    command.CommandText = "SELECT count(*) FROM __EFMigrationsHistory";
                     Assert.That(command.ExecuteScalar(), Is.EqualTo(1));
                 }
 

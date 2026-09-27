@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Data.Sqlite;
 
 namespace HwSync.Persistence.Sqlite
@@ -23,19 +24,36 @@ namespace HwSync.Persistence.Sqlite
         }
 
         /// <summary>
+        /// Создаёт короткоживущий контекст одной операции.
+        /// </summary>
+        public SyncDbContext CreateContext()
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(FilePath)!);
+            DbContextOptionsBuilder<SyncDbContext> options = new();
+            options.UseSqlite(ConnectionString, sqlite =>
+                sqlite.MigrationsAssembly("HwSync.Persistence.Sqlite.Migrations"));
+            return new SyncDbContext(options.Options);
+        }
+
+        /// <summary>
+        /// Возвращает параметры SQLite с внешними ключами и ожиданием блокировок.
+        /// </summary>
+        public string ConnectionString => new SqliteConnectionStringBuilder
+        {
+            DataSource = FilePath,
+            Mode = SqliteOpenMode.ReadWriteCreate,
+            ForeignKeys = true,
+            Pooling = false,
+            DefaultTimeout = 30
+        }.ToString();
+
+        /// <summary>
         /// Открывает подключение с внешними ключами и ожиданием блокировки.
         /// </summary>
         public SqliteConnection OpenConnection()
         {
             Directory.CreateDirectory(Path.GetDirectoryName(FilePath)!);
-            SqliteConnection connection = new(new SqliteConnectionStringBuilder
-            {
-                DataSource = FilePath,
-                Mode = SqliteOpenMode.ReadWriteCreate,
-                ForeignKeys = true,
-                Pooling = false,
-                DefaultTimeout = 30
-            }.ToString());
+            SqliteConnection connection = new(ConnectionString);
             try
             {
                 connection.Open();

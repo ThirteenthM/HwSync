@@ -1,6 +1,7 @@
 using HwSync.Abstractions.Models;
 using HwSync.Persistence.Sqlite.Migrations;
 using Microsoft.Data.Sqlite;
+using Microsoft.EntityFrameworkCore;
 
 namespace HwSync.Persistence.Sqlite.Tests
 {
@@ -52,54 +53,46 @@ namespace HwSync.Persistence.Sqlite.Tests
         {
             SqliteMigrator migrations = new(_database);
             migrations.Apply();
-            string identity = (string)Scalar("SELECT participant_id FROM participant")!;
+            string identity = (string)Scalar("SELECT ParticipantId FROM participant")!;
             migrations.Apply();
-            Assert.That(Scalar("SELECT count(*) FROM schema_migrations"), Is.EqualTo(1));
-            Assert.That(Scalar("SELECT participant_id FROM participant"), Is.EqualTo(identity));
+            Assert.That(Scalar("SELECT count(*) FROM __EFMigrationsHistory"), Is.EqualTo(1));
+            Assert.That(Scalar("SELECT ParticipantId FROM participant"), Is.EqualTo(identity));
             Assert.That(Guid.ParseExact(identity, "N"), Is.Not.EqualTo(Guid.Empty));
             Assert.That(Scalar("PRAGMA foreign_keys"), Is.EqualTo(1));
         }
 
         /// <summary>
-        /// Ошибка следующей миграции откатывает DDL и записи журнала, сохраняя прежние данные.
+        /// Прежняя база остаётся нетронутой и требует явного выбора нового файла.
         /// </summary>
         [Test]
-        public void MigrationFailure_RollsBack()
+        public void Migrations_RejectLegacyDatabase()
         {
-            SqliteMigration first = new(1, "first", "CREATE TABLE example(value TEXT); INSERT INTO example VALUES('saved');");
-            new SqliteMigrator(_database, [first]).Apply();
-            Assert.Throws<SqliteException>(() => new SqliteMigrator(_database,
-                [first, new(2, "broken", "CREATE TABLE partial(value TEXT); SELECT * FROM nonexistent;")]).Apply());
-            Assert.That(Scalar("SELECT value FROM example"), Is.EqualTo("saved"));
+            Scalar("CREATE TABLE schema_migrations(version INTEGER); INSERT INTO schema_migrations VALUES(1);");
+            Assert.Throws<InvalidDataException>(() => new SqliteMigrator(_database).Apply());
             Assert.That(Scalar("SELECT count(*) FROM schema_migrations"), Is.EqualTo(1));
-            Assert.That(Scalar("SELECT count(*) FROM sqlite_master WHERE name='partial'"), Is.EqualTo(0));
+            Assert.That(Scalar("SELECT count(*) FROM sqlite_master WHERE name='participant'"), Is.EqualTo(0));
         }
 
         /// <summary>
-        /// Не допускает запуск с изменённой миграцией либо более старым приложением.
+        /// Не допускает запуск старого приложения с более новой схемой.
         /// </summary>
-        [TestCase(false)]
-        [TestCase(true)]
-        public void MigrationHistory_RejectsChanges(bool olderApplication)
+        [Test]
+        public void Migrations_RejectUnknownVersion()
         {
-            SqliteMigration first = new(1, "first", "CREATE TABLE example(value TEXT);");
-            new SqliteMigrator(_database, [first]).Apply();
-            IReadOnlyList<SqliteMigration> migrations = olderApplication ? [] : [first with { Sql = "SELECT 1;" }];
-            Assert.Throws<InvalidDataException>(() => new SqliteMigrator(_database, migrations).Apply());
-            Assert.That(Scalar("SELECT count(*) FROM schema_migrations"), Is.EqualTo(1));
+            new SqliteMigrator(_database).Apply();
+            Scalar("INSERT INTO __EFMigrationsHistory VALUES ('99999999999999_Future', '10.0.3')");
+            Assert.Throws<InvalidDataException>(() => new SqliteMigrator(_database).Apply());
+            Assert.That(Scalar("SELECT count(*) FROM __EFMigrationsHistory"), Is.EqualTo(2));
         }
 
         /// <summary>
-        /// Новая миграция применяется поверх данных прежней версии.
+        /// Миграция описывает текущую модель полностью.
         /// </summary>
         [Test]
-        public void MigrationUpgrade_PreservesData()
+        public void Migrations_MatchModel()
         {
-            SqliteMigration first = new(1, "first", "CREATE TABLE example(value TEXT); INSERT INTO example VALUES('saved');");
-            new SqliteMigrator(_database, [first]).Apply();
-            new SqliteMigrator(_database, [first, new(2, "add column", "ALTER TABLE example ADD COLUMN extra INTEGER DEFAULT 7;")]).Apply();
-            Assert.That(Scalar("SELECT value FROM example"), Is.EqualTo("saved"));
-            Assert.That(Scalar("SELECT extra FROM example"), Is.EqualTo(7));
+            using SyncDbContext context = _database.CreateContext();
+            Assert.That(context.Database.HasPendingModelChanges(), Is.False);
         }
 
         /// <summary>
@@ -137,7 +130,7 @@ namespace HwSync.Persistence.Sqlite.Tests
             SqliteFolderHistory history = new(_database);
             string root = Path.Combine(_directory, "files");
             history.RecordSnapshot(root, [new("old.txt", 1, DateTime.UnixEpoch)]);
-            Assert.Throws<SqliteException>(() => history.RecordSnapshot(root, [new("invalid.txt", -1, DateTime.UnixEpoch)]));
+            Assert.Throws<DbUpdateException>(() => history.RecordSnapshot(root, [new("invalid.txt", -1, DateTime.UnixEpoch)]));
             Assert.That(history.GetDeletedFiles(root), Is.Empty);
             history.RecordSnapshot(root, []);
             Assert.That(history.GetDeletedFiles(root).Single().RelativePath, Is.EqualTo("old.txt"));
@@ -171,7 +164,11 @@ namespace HwSync.Persistence.Sqlite.Tests
             Guid client = Guid.NewGuid();
             SqliteFolderSyncStateStore store = new(_database);
             Assert.That(store.Load(client, "folder"), Is.Null);
-            store.Save(new(client, "folder", []));
+            store.Save(new(client, "folder", [new("old.txt", 1, null), new("keep.txt", 2, "hash")]));
+            Assert.That(store.Load(client, "folder")!.Files, Has.Count.EqualTo(2));
+            store.Save(new(client, "folder", [new("keep.txt", 3, null), new("new.txt", 1, "new-hash")]));
+            Assert.That(store.Load(client, "folder")!.Files,
+                Is.EquivalentTo(new FileVersion[] { new("keep.txt", 3, null), new("new.txt", 1, "new-hash") }));
             Assert.That(new SqliteFolderSyncStateStore(_database).Load(client, "folder")!.ClientId, Is.EqualTo(client));
             Assert.That(store.Load(Guid.NewGuid(), "folder"), Is.Null);
             Assert.That(store.Load(client, "other"), Is.Null);

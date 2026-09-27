@@ -1,7 +1,8 @@
-using System.Globalization;
 using HwSync.Abstractions.FileSystem;
 using HwSync.Abstractions.Models;
-using Microsoft.Data.Sqlite;
+using HwSync.Persistence.Sqlite.Entities;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace HwSync.Persistence.Sqlite
 {
@@ -13,7 +14,7 @@ namespace HwSync.Persistence.Sqlite
         private readonly SqliteDatabase _database;
 
         /// <summary>
-        /// Принимает базу с уже применёнными миграциями.
+        /// Принимает фабрику контекстов с применёнными миграциями.
         /// </summary>
         public SqliteFolderHistory(SqliteDatabase database)
         {
@@ -21,124 +22,98 @@ namespace HwSync.Persistence.Sqlite
         }
 
         /// <summary>
-        /// Атомарно сохраняет успешный снимок и отмечает исчезнувшие известные файлы.
+        /// Атомарно обновляет снимок и историю исчезновения файлов.
         /// </summary>
         public void RecordSnapshot(string rootPath, IReadOnlyCollection<FileSnapshot> snapshot)
         {
             ArgumentNullException.ThrowIfNull(snapshot);
             _database.EnsureOutside(rootPath);
             Dictionary<string, FileSnapshot> current = snapshot.ToDictionary(file => file.RelativePath, StringComparer.OrdinalIgnoreCase);
-            using SqliteConnection connection = _database.OpenConnection();
-            using SqliteTransaction transaction = connection.BeginTransaction(deferred: false);
-            using SqliteCommand command = connection.CreateCommand();
-            command.Transaction = transaction;
+            using SyncDbContext context = _database.CreateContext();
+            using IDbContextTransaction transaction = context.Database.BeginTransaction();
             string root = NormalizeRoot(rootPath);
-            Run(command, "INSERT INTO folders(folder_id, root_path) VALUES($id, $root) ON CONFLICT(root_path) DO NOTHING",
-                ("$id", Guid.NewGuid().ToString("N")), ("$root", root));
-            Set(command, "SELECT folder_id FROM folders WHERE root_path=$root", ("$root", root));
-            string folderId = (string)command.ExecuteScalar()!;
-            Set(command, "SELECT relative_path, size, modified_utc FROM file_snapshots WHERE folder_id=$folder", ("$folder", folderId));
-            List<FileSnapshot> previous = [];
-            using (SqliteDataReader reader = command.ExecuteReader())
+            FolderEntity? folder = context.Folders.SingleOrDefault(item => item.RootPath == root);
+            if (folder is null)
             {
-                while (reader.Read())
+                folder = new() { Id = Guid.NewGuid().ToString("N"), RootPath = root };
+                context.Folders.Add(folder);
+                context.SaveChanges();
+            }
+
+            string folderId = folder.Id;
+            string participant = context.Participants.Single().ParticipantId;
+            List<FileSnapshotEntity> previous = context.FileSnapshots.Where(item => item.FolderId == folderId).ToList();
+            foreach (FileSnapshotEntity file in previous)
+            {
+                if (current.TryGetValue(file.RelativePath, out FileSnapshot? updated))
                 {
-                    previous.Add(new(reader.GetString(0), reader.GetInt64(1), ParseUtc(reader.GetString(2))));
+                    file.Size = updated.Size;
+                    file.ModifiedUtc = updated.LastWriteTimeUtc;
+                }
+                else
+                {
+                    context.DeletionEvents.Add(new()
+                    {
+                        FolderId = folderId,
+                        OriginParticipantId = participant,
+                        RelativePath = file.RelativePath,
+                        DeletedUtc = DateTimeOffset.UtcNow,
+                        PreviousSize = file.Size,
+                        PreviousModifiedUtc = file.ModifiedUtc,
+                        Active = true
+                    });
+                    context.FileSnapshots.Remove(file);
                 }
             }
 
-            foreach (FileSnapshot file in previous.Where(file => !current.ContainsKey(file.RelativePath)))
+            HashSet<string> knownPaths = new(previous.Select(file => file.RelativePath), StringComparer.OrdinalIgnoreCase);
+            foreach (FileSnapshot file in current.Values.Where(file => !knownPaths.Contains(file.RelativePath)))
             {
-                Run(command, """
-                    INSERT INTO deletion_events(folder_id, origin_participant_id, relative_path, deleted_utc,
-                        previous_size, previous_modified_utc, active)
-                    VALUES($folder, (SELECT participant_id FROM participant WHERE singleton=1), $path, $deleted, $size, $modified, 1)
-                    """, ("$folder", folderId), ("$path", file.RelativePath), ("$deleted", DateTimeOffset.UtcNow.ToString("O")),
-                    ("$size", file.Size), ("$modified", file.LastWriteTimeUtc.ToString("O")));
+                context.FileSnapshots.Add(new()
+                {
+                    FolderId = folderId, RelativePath = file.RelativePath,
+                    Size = file.Size, ModifiedUtc = file.LastWriteTimeUtc
+                });
             }
 
-            IReadOnlyList<DeletedFile> deleted = ReadDeleted(command, folderId);
-            foreach (DeletedFile file in deleted.Where(file => file.Deleted && current.ContainsKey(file.RelativePath)))
+            List<DeletionEventEntity> activeDeletions = context.DeletionEvents
+                .Where(item => item.FolderId == folderId && item.Active).ToList();
+            foreach (DeletionEventEntity deletion in activeDeletions)
             {
-                Run(command, "UPDATE deletion_events SET active=0 WHERE event_number=$number", ("$number", file.ChangeNumber));
+                if (current.ContainsKey(deletion.RelativePath))
+                {
+                    deletion.Active = false;
+                }
             }
 
-            Run(command, "DELETE FROM file_snapshots WHERE folder_id=$folder", ("$folder", folderId));
-            foreach (FileSnapshot file in current.Values)
-            {
-                Run(command, "INSERT INTO file_snapshots VALUES($folder, $path, $size, $modified)",
-                    ("$folder", folderId), ("$path", file.RelativePath), ("$size", file.Size),
-                    ("$modified", file.LastWriteTimeUtc.ToString("O")));
-            }
-
+            context.SaveChanges();
             transaction.Commit();
         }
 
         /// <summary>
-        /// Возвращает журнал папки, включая неактивные события после восстановления файла.
+        /// Читает историю без отслеживания изменений объектов.
         /// </summary>
         public IReadOnlyList<DeletedFile> GetDeletedFiles(string rootPath)
         {
             _database.EnsureOutside(rootPath);
-            using SqliteConnection connection = _database.OpenConnection();
-            using SqliteCommand command = connection.CreateCommand();
-            Set(command, "SELECT folder_id FROM folders WHERE root_path=$root", ("$root", NormalizeRoot(rootPath)));
-            return command.ExecuteScalar() is string folderId ? ReadDeleted(command, folderId) : [];
-        }
-
-        /// <summary>
-        /// Читает события в порядке устойчивого номера участника.
-        /// </summary>
-        private static IReadOnlyList<DeletedFile> ReadDeleted(SqliteCommand command, string folderId)
-        {
-            Set(command, """
-                SELECT relative_path, active, deleted_utc, event_number, previous_size, previous_modified_utc
-                FROM deletion_events WHERE folder_id=$folder ORDER BY event_number
-                """, ("$folder", folderId));
-            List<DeletedFile> files = [];
-            using SqliteDataReader reader = command.ExecuteReader();
-            while (reader.Read())
+            using SyncDbContext context = _database.CreateContext();
+            string root = NormalizeRoot(rootPath);
+            string? folderId = context.Folders.Where(folder => folder.RootPath == root).Select(folder => folder.Id).SingleOrDefault();
+            if (folderId is null)
             {
-                files.Add(new(reader.GetString(0), reader.GetBoolean(1),
-                    DateTimeOffset.Parse(reader.GetString(2), CultureInfo.InvariantCulture), reader.GetInt64(3),
-                    new(reader.GetString(0), reader.GetInt64(4), ParseUtc(reader.GetString(5)))));
+                return [];
             }
 
-            return files;
+            return context.DeletionEvents.AsNoTracking().Where(item => item.FolderId == folderId)
+                .OrderBy(item => item.Number).AsEnumerable()
+                .Select(item => new DeletedFile(item.RelativePath, item.Active, item.DeletedUtc, item.Number,
+                    new FileSnapshot(item.RelativePath, item.PreviousSize, item.PreviousModifiedUtc))).ToArray();
         }
 
         /// <summary>
-        /// Приводит путь к ключу, независимому от регистра Windows.
+        /// Приводит путь Windows к устойчивому ключу.
         /// </summary>
         private static string NormalizeRoot(string rootPath) =>
             Path.TrimEndingDirectorySeparator(Path.GetFullPath(rootPath)).ToUpperInvariant();
-
-        /// <summary>
-        /// Восстанавливает время снимка без смены часового пояса.
-        /// </summary>
-        private static DateTime ParseUtc(string value) =>
-            DateTime.Parse(value, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind);
-
-        /// <summary>
-        /// Задаёт SQL и параметры без конкатенации пользовательских значений.
-        /// </summary>
-        private static void Set(SqliteCommand command, string sql, params (string Name, object Value)[] parameters)
-        {
-            command.CommandText = sql;
-            command.Parameters.Clear();
-            foreach ((string name, object value) in parameters)
-            {
-                command.Parameters.AddWithValue(name, value);
-            }
-        }
-
-        /// <summary>
-        /// Выполняет изменение в текущей транзакции.
-        /// </summary>
-        private static void Run(SqliteCommand command, string sql, params (string Name, object Value)[] parameters)
-        {
-            Set(command, sql, parameters);
-            command.ExecuteNonQuery();
-        }
     }
 }

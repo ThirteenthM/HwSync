@@ -48,7 +48,7 @@ AppServices ссылается на Contract, Api.Client и Infrastructure. Cont
 appsettings.json и sync-profiles.json остались рядом с запускаемым exe и исходниками Windows-приложения клиента. Файлы конфигурации и имена параметров не изменились.
 ## Хранение SQLite
 
-HwSync.Persistence.Sqlite реализует существующие интерфейсы хранения снимков, событий удаления и подтверждённых состояний. HwSync.Persistence.Sqlite.Migrations содержит версии схемы и транзакционное обновление базы. Серверный Host и приложение клиента используют SQLite через DI. Сервер применяет миграции в SqliteStartupService до обработки заданий; клиент — в ClientStorageBootstrap.Initialize до открытия окна. Тестовая JSON-история не переносится.
+HwSync.Persistence.Sqlite реализует существующие интерфейсы хранения снимков, событий удаления и подтверждённых состояний. HwSync.Persistence.Sqlite содержит модель EF Core и создаёт контекст на одну операцию. HwSync.Persistence.Sqlite.Migrations содержит миграции EF Core, снимок модели и фабрику для команд dotnet ef. Серверный Host и приложение клиента используют SQLite через DI. Сервер применяет миграции в SqliteStartupService до обработки заданий; клиент — в ClientStorageBootstrap.Initialize до открытия окна.
 
 Порядок подключения и развития схемы описан в SQLITE-STORAGE.md.
 

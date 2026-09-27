@@ -1,0 +1,7 @@
+<Project>
+  <PropertyGroup>
+    <!-- Общая версия; отдельный проект может переопределить её. -->
+    <Version Condition="'$(Version)' == ''">0.1.0</Version>
+    <!-- AssemblyVersion и FileVersion SDK формирует из Version автоматически. -->
+  </PropertyGroup>
+</Project>
