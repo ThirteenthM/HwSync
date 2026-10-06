@@ -131,6 +131,46 @@ namespace HwSync.Core.Tests.Services
         }
 
         /// <summary>
+        /// Отмена выполняющегося задания прерывает переданный ему токен.
+        /// </summary>
+        [Test]
+        public async Task Cancel_RunningJob_CancelsScanToken()
+        {
+            ScanJobService jobs = new();
+            ScanJob running = jobs.Start(new(Path.GetTempPath(), []));
+            TaskCompletionSource entered = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            using CancellationTokenSource stop = new(TimeSpan.FromSeconds(10));
+            Task worker = Task.Run(() => jobs.RunAsync((scanRequest, cancellationToken) =>
+            {
+                entered.TrySetResult();
+                cancellationToken.WaitHandle.WaitOne();
+                cancellationToken.ThrowIfCancellationRequested();
+                return [];
+            }, stop.Token));
+            try
+            {
+                await entered.Task.WaitAsync(stop.Token);
+                Assert.That(jobs.Cancel(running.Id)!.Status, Is.EqualTo(ScanJobStatus.CancellationRequested));
+                while (jobs.Get(running.Id)!.FinishedAt is null)
+                {
+                    await Task.Delay(10, stop.Token);
+                }
+
+                Assert.Multiple(() =>
+                {
+                    Assert.That(jobs.Get(running.Id)!.Status, Is.EqualTo(ScanJobStatus.Cancelled));
+                    Assert.That(jobs.Get(running.Id)!.Changes, Is.Null);
+                    Assert.That(jobs.Get(running.Id)!.Error, Is.Null);
+                });
+            }
+            finally
+            {
+                await stop.CancelAsync();
+                await worker;
+            }
+        }
+
+        /// <summary>
         /// Проверяет продолжение очереди после ошибки сканирования.
         /// </summary>
         [Test]

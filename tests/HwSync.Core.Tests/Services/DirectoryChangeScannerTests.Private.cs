@@ -40,5 +40,29 @@ namespace HwSync.Core.Tests.Services
                 return Snapshot;
             }
         }
+
+        /// <summary>
+        /// Подсчитывает попытки записать историю папки.
+        /// </summary>
+        private sealed class RecordingHistory : IFolderHistory
+        {
+            public int RecordedSnapshots { get; private set; }
+
+            /// <summary>
+            /// Увеличивает счётчик записи снимка.
+            /// </summary>
+            public void RecordSnapshot(string rootPath, IReadOnlyCollection<FileSnapshot> snapshot)
+            {
+                RecordedSnapshots++;
+            }
+
+            /// <summary>
+            /// История удалений этому тесту не нужна.
+            /// </summary>
+            public IReadOnlyList<DeletedFile> GetDeletedFiles(string rootPath)
+            {
+                return [];
+            }
+        }
     }
 }

@@ -79,5 +79,21 @@ namespace HwSync.Core.Tests.Services
 }));
             });
         }
+
+        /// <summary>
+        /// Отмена после чтения снимка не записывает историю папки.
+        /// </summary>
+        [Test]
+        public void Scan_WhenCancelledAfterSnapshot_DoesNotRecordHistory()
+        {
+            using CancellationTokenSource cancellation = new();
+            cancellation.Cancel();
+            RecordingHistory history = new();
+            StubFileSnapshotProvider provider = new([new("a.txt", 1, LastWriteTimeUtc)]);
+            DirectoryChangeScanner scanner = new(provider, new ChangeComparer(), history);
+
+            Assert.Throws<OperationCanceledException>(() => scanner.Scan(new("folder", []), cancellation.Token));
+            Assert.That(history.RecordedSnapshots, Is.EqualTo(0));
+        }
     }
 }
