@@ -102,7 +102,7 @@ namespace HwSync.Windows.AppServices.Client.ViewModels
                     return;
                 }
 
-                HashSet<string> selected = new(reviewed.Select(item => (item.Change.Current ?? item.Change.Previous)!.RelativePath), StringComparer.Ordinal);
+                HashSet<string> selected = new(reviewed.Select(item => (item.Change.Current ?? item.Change.Previous)!.RelativePath), StringComparer.OrdinalIgnoreCase);
                 files = files.Where(file => selected.Contains(file.RelativePath)).ToArray();
             }
             await ExecuteAsync(async () =>

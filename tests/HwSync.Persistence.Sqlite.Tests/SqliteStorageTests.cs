@@ -1,4 +1,5 @@
 using HwSync.Abstractions.Models;
+using HwSync.Infrastructure.FileSystem;
 using HwSync.Persistence.Sqlite.Migrations;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
@@ -172,6 +173,74 @@ namespace HwSync.Persistence.Sqlite.Tests
             Assert.That(new SqliteFolderSyncStateStore(_database).Load(client, "folder")!.ClientId, Is.EqualTo(client));
             Assert.That(store.Load(Guid.NewGuid(), "folder"), Is.Null);
             Assert.That(store.Load(client, "other"), Is.Null);
+        }
+
+        /// <summary>
+        /// Параллельное сканирование передачи не создаёт снимков и удалений служебных файлов.
+        /// </summary>
+        [TestCase(false, false)]
+        [TestCase(false, true)]
+        [TestCase(true, false)]
+        [TestCase(true, true)]
+        public async Task History_IgnoresTemporaryFilesDuringTransfer(bool replace, bool cancel)
+        {
+            new SqliteMigrator(_database).Apply();
+            string root = Path.Combine(_directory, "files");
+            Directory.CreateDirectory(root);
+            string target = Path.Combine(root, "file.txt");
+            FileSnapshot original = new("file.txt", 3, DateTime.UnixEpoch);
+            if (replace)
+            {
+                File.WriteAllBytes(target, [1, 2, 3]);
+                File.SetLastWriteTimeUtc(target, original.LastWriteTimeUtc);
+            }
+
+            SqliteFolderHistory history = new(_database);
+            HistorySnapshotProvider provider = new(new DirectorySnapshotProvider(), history);
+            IReadOnlyCollection<FileSnapshot> before = provider.GetSnapshot(root);
+            using CancellationTokenSource cancellation = new();
+            Func<Stream, CancellationToken, Task> receive = async (output, token) =>
+            {
+                await output.WriteAsync(new byte[] { 4 }, token);
+                await output.FlushAsync(token);
+                Assert.That(Directory.GetFiles(root, ".hwsync-*.tmp"), Has.Length.EqualTo(1));
+                Assert.That(provider.GetSnapshot(root), Is.EquivalentTo(before));
+                Assert.That(history.GetDeletedFiles(root), Is.Empty);
+                if (cancel)
+                {
+                    cancellation.Cancel();
+                    token.ThrowIfCancellationRequested();
+                }
+
+                await output.WriteAsync(new byte[] { 5 }, token);
+            };
+            FileSnapshot incoming = new("file.txt", 2, DateTime.UnixEpoch);
+            Task operation;
+            if (replace)
+            {
+                ConflictFileOperations replacement = new(new SourceFileReader());
+                operation = replacement.ReplaceAsync(root, original, incoming, receive, cancellation.Token);
+            }
+            else
+            {
+                MissingFileSynchronizer copier = new();
+                operation = copier.CopyAsync(root, [incoming], (_, output, token) => receive(output, token), cancellation.Token);
+            }
+
+            if (cancel)
+            {
+                Assert.ThrowsAsync<OperationCanceledException>(async () => await operation);
+            }
+            else
+            {
+                await operation;
+                Assert.That(File.ReadAllBytes(target), Is.EqualTo(new byte[] { 4, 5 }));
+            }
+
+            IReadOnlyCollection<FileSnapshot> after = provider.GetSnapshot(root);
+            Assert.That(after, Is.EquivalentTo(cancel ? before : new FileSnapshot[] { incoming }));
+            Assert.That(history.GetDeletedFiles(root), Is.Empty);
+            Assert.That(Directory.GetFiles(root, ".hwsync-*.tmp"), Is.Empty);
         }
 
         /// <summary>

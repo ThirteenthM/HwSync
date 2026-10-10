@@ -70,8 +70,8 @@ namespace HwSync.Windows.AppServices.Client.ViewModels
                 return plan;
             }
 
-            Dictionary<string, FileSyncDecision> revised = new(StringComparer.Ordinal);
-            foreach (IGrouping<string, DeletionCandidate> group in candidates.GroupBy(item => item.Path, StringComparer.Ordinal))
+            Dictionary<string, FileSyncDecision> revised = new(StringComparer.OrdinalIgnoreCase);
+            foreach (IGrouping<string, DeletionCandidate> group in candidates.GroupBy(item => item.Path, StringComparer.OrdinalIgnoreCase))
             {
                 bool server = group.Any(item => item.OnServer && selected.Contains(item));
                 bool client = group.Any(item => !item.OnServer && selected.Contains(item));
@@ -95,7 +95,7 @@ namespace HwSync.Windows.AppServices.Client.ViewModels
         {
             ScanJobResponse comparison = _completedComparison ?? throw new InvalidOperationException("Повторите сравнение.");
             FileSnapshotDto? snapshot = comparison.Changes?.Select(change => candidate.OnServer ? change.Current : change.Previous)
-                .SingleOrDefault(file => file?.RelativePath == candidate.Path);
+                .SingleOrDefault(file => string.Equals(file?.RelativePath, candidate.Path, StringComparison.OrdinalIgnoreCase));
             if (snapshot is null || snapshot.Size != candidate.Size || snapshot.LastWriteTimeUtc != candidate.ModifiedUtc)
             {
                 throw new InvalidOperationException("Файл не относится к текущему сравнению.");
@@ -116,12 +116,12 @@ namespace HwSync.Windows.AppServices.Client.ViewModels
                     throw new InvalidOperationException("Сервер не поддерживает просмотр.");
                 }
 
-                await downloader.DownloadFileAsync(comparison.Id, candidate.Path, output, cancellation.Token);
+                await downloader.DownloadFileAsync(comparison.Id, snapshot.RelativePath, output, cancellation.Token);
             }
             else
             {
                 await using Stream input = _fileReader.OpenRead(_comparedClientRoot,
-                    new FileSnapshot(candidate.Path, candidate.Size, candidate.ModifiedUtc));
+                    new FileSnapshot(snapshot.RelativePath, snapshot.Size, snapshot.LastWriteTimeUtc));
                 await input.CopyToAsync(output, cancellation.Token);
             }
 

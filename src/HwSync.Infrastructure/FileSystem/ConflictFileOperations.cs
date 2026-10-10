@@ -30,7 +30,7 @@ namespace HwSync.Infrastructure.FileSystem
             }
 
             string target = SafeFilePath.Resolve(root, expected.RelativePath);
-            string temporary = Path.Combine(Path.GetDirectoryName(target)!, ".hwsync-" + Guid.NewGuid().ToString("N") + ".tmp");
+            string temporary = TransferTemporaryFile.CreatePath(Path.GetDirectoryName(target)!);
             try
             {
                 await using (FileStream output = new(temporary, FileMode.CreateNew, FileAccess.Write, FileShare.None, 81920, true))

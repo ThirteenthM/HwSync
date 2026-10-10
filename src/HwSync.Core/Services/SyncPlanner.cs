@@ -33,10 +33,11 @@ namespace HwSync.Core.Services
                 SyncAction action = change.ChangeType switch
                 {
                     FileChangeType.Unchanged when change.Previous is not null && change.Current is not null
-                        && change.Previous.RelativePath == change.Current.RelativePath => SyncAction.KeepOnClient,
+                        && string.Equals(change.Previous.RelativePath, change.Current.RelativePath, StringComparison.OrdinalIgnoreCase) => SyncAction.KeepOnClient,
                     FileChangeType.Created when change.Previous is null && change.Current is not null => SyncAction.CopyToClient,
                     FileChangeType.Modified when change.Previous is not null && change.Current is not null
-                        && change.Previous.RelativePath == change.Current.RelativePath => mode == SyncMode.CopyMissing ? SyncAction.KeepOnClient : SyncAction.ReplaceOnClient,
+                        && string.Equals(change.Previous.RelativePath, change.Current.RelativePath, StringComparison.OrdinalIgnoreCase) =>
+                        mode == SyncMode.CopyMissing ? SyncAction.KeepOnClient : SyncAction.ReplaceOnClient,
                     FileChangeType.Deleted when change.Previous is not null && change.Current is null =>
                         mode == SyncMode.Mirror ? SyncAction.DeleteFromClient : SyncAction.KeepOnClient,
                     _ => throw new ArgumentException("Некорректное изменение для плана синхронизации.")

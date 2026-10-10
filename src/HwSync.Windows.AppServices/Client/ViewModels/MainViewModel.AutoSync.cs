@@ -46,9 +46,9 @@ namespace HwSync.Windows.AppServices.Client.ViewModels
                 return;
             }
 
-            string? duplicatePath = Changes.GroupBy(row => row.Path, StringComparer.Ordinal)
+            string? duplicatePath = Changes.GroupBy(row => row.Path, StringComparer.OrdinalIgnoreCase)
                 .FirstOrDefault(group => group.Skip(1).Any())?.Key
-                ?? comparison.Changes.GroupBy(change => change.Current?.RelativePath ?? change.Previous?.RelativePath ?? "", StringComparer.Ordinal)
+                ?? comparison.Changes.GroupBy(change => change.Current?.RelativePath ?? change.Previous?.RelativePath ?? "", StringComparer.OrdinalIgnoreCase)
                     .FirstOrDefault(group => group.Skip(1).Any())?.Key;
             if (duplicatePath is not null)
             {
@@ -66,7 +66,7 @@ namespace HwSync.Windows.AppServices.Client.ViewModels
             }
 
             Dictionary<string, FileSyncDecision> decisionsByPath = Changes.ToDictionary(
-                row => row.Path, row => row.Action, StringComparer.Ordinal);
+                row => row.Path, row => row.Action, StringComparer.OrdinalIgnoreCase);
             (FileChangeDto Change, FileSyncDecision Action)[] plan = comparison.Changes
                 .Select(change => (Change: change, Action: decisionsByPath.GetValueOrDefault(
                     change.Current?.RelativePath ?? change.Previous?.RelativePath ?? "",

@@ -44,7 +44,8 @@ namespace HwSync.Api.Handlers
             }
 
             FileChange? change = job.Changes?.SingleOrDefault(item => item.ChangeType == FileChangeType.Modified
-                && item.Current?.RelativePath == relativePath && item.Previous?.RelativePath == relativePath);
+                && string.Equals(item.Current?.RelativePath, relativePath, StringComparison.OrdinalIgnoreCase)
+                && string.Equals(item.Previous?.RelativePath, relativePath, StringComparison.OrdinalIgnoreCase));
             if (change?.Previous is not FileSnapshot client || change.Current is not FileSnapshot server)
             {
                 return new ConflictObjectResult("Файл не является конфликтом выбранного сравнения.");
@@ -56,7 +57,7 @@ namespace HwSync.Api.Handlers
                 {
                     // Не создаём копию для уже устаревшего серверного снимка.
                     using Stream original = _reader.OpenRead(job.SourceRootPath, server);
-                    FileSnapshot backup = new(ConflictCopyPath.Create(relativePath, id), client.Size, client.LastWriteTimeUtc);
+                    FileSnapshot backup = new(ConflictCopyPath.Create(client.RelativePath, id), client.Size, client.LastWriteTimeUtc);
                     await _files.CopyMissingAsync(job.SourceRootPath, backup, body, token);
                 }
                 else

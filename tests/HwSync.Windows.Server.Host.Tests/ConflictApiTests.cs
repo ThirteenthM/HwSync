@@ -22,12 +22,20 @@ namespace HwSync.Windows.Server.Host.Tests
         [TestCase(true, true)]
         [TestCase(true, false, true)]
         [TestCase(true, true, true)]
-        public async Task ComparedFile_RequiresUnchangedVersion(bool delete, bool changed, bool equal = false)
+        [TestCase(false, false, false, true)]
+        [TestCase(true, false, false, true)]
+        [TestCase(false, true, false, true)]
+        [TestCase(true, true, false, true)]
+        [TestCase(true, false, true, true)]
+        [TestCase(true, true, true, true)]
+        public async Task ComparedFile_RequiresUnchangedVersion(bool delete, bool changed, bool equal = false, bool differentCase = false)
         {
             string root = Path.Combine(TestContext.CurrentContext.WorkDirectory, "compared-api", Guid.NewGuid().ToString("N"));
             string server = Path.Combine(root, "server");
             Directory.CreateDirectory(server);
-            string target = Path.Combine(server, "file.txt");
+            string serverName = differentCase ? "File.txt" : "file.txt";
+            string requestPath = differentCase ? "FILE.TXT" : "file.txt";
+            string target = Path.Combine(server, serverName);
             await File.WriteAllTextAsync(target, "server");
             WebApplicationBuilder builder = HostBootstrap.CreateBuilder(true, ["Urls=http://127.0.0.1:0"]);
             builder.Configuration["Storage:DatabasePath"] = Path.Combine(root, "state.db");
@@ -57,8 +65,8 @@ namespace HwSync.Windows.Server.Host.Tests
                 }
 
                 Task action = delete
-                    ? api.DeleteComparedServerFileAsync(job.Id, "file.txt", timeout.Token)
-                    : api.EnsureServerFileUnchangedAsync(job.Id, "file.txt", timeout.Token);
+                    ? api.DeleteComparedServerFileAsync(job.Id, requestPath, timeout.Token)
+                    : api.EnsureServerFileUnchangedAsync(job.Id, requestPath, timeout.Token);
                 if (changed)
                 {
                     HwSyncApiException? error = Assert.ThrowsAsync<HwSyncApiException>(async () => await action);
@@ -83,12 +91,18 @@ namespace HwSync.Windows.Server.Host.Tests
         [TestCase(true, false)]
         [TestCase(false, true)]
         [TestCase(true, true)]
-        public async Task Conflict_UsesComparisonPreconditions(bool preserve, bool changed)
+        [TestCase(false, false, true)]
+        [TestCase(true, false, true)]
+        [TestCase(false, true, true)]
+        [TestCase(true, true, true)]
+        public async Task Conflict_UsesComparisonPreconditions(bool preserve, bool changed, bool differentCase = false)
         {
             string root = Path.Combine(Path.GetTempPath(), "HwSyncConflictApi-" + Guid.NewGuid());
             string server = Path.Combine(root, "server");
             Directory.CreateDirectory(server);
-            string target = Path.Combine(server, "file.txt");
+            string serverName = differentCase ? "File.txt" : "file.txt";
+            string requestPath = differentCase ? "FILE.TXT" : "file.txt";
+            string target = Path.Combine(server, serverName);
             await File.WriteAllTextAsync(target, "server");
             DateTime clientTime = DateTime.UtcNow.AddMinutes(-5);
             WebApplicationBuilder builder = HostBootstrap.CreateBuilder(true, ["Urls=http://127.0.0.1:0"]);
@@ -110,7 +124,13 @@ namespace HwSync.Windows.Server.Host.Tests
                     job = await api.GetScanAsync(job.Id, timeout.Token);
                 }
 
-                Assert.That(job.Changes!.Single().ChangeType, Is.EqualTo(FileChangeKind.Modified));
+                FileChangeDto difference = job.Changes!.Single();
+                Assert.That(difference.ChangeType, Is.EqualTo(FileChangeKind.Modified));
+                Assert.That(difference.Previous!.RelativePath, Is.EqualTo("file.txt"));
+                Assert.That(difference.Current!.RelativePath, Is.EqualTo(serverName));
+                using MemoryStream downloaded = new();
+                await api.DownloadFileAsync(job.Id, requestPath, downloaded, timeout.Token);
+                Assert.That(System.Text.Encoding.UTF8.GetString(downloaded.ToArray()), Is.EqualTo("server"));
                 if (changed)
                 {
                     await File.WriteAllTextAsync(target, "server changed");
@@ -118,8 +138,8 @@ namespace HwSync.Windows.Server.Host.Tests
 
                 using MemoryStream source = new("client"u8.ToArray());
                 Task action = preserve
-                    ? api.PreserveClientFileAsync(job.Id, "file.txt", source, timeout.Token)
-                    : api.ReplaceServerFileAsync(job.Id, "file.txt", source, timeout.Token);
+                    ? api.PreserveClientFileAsync(job.Id, requestPath, source, timeout.Token)
+                    : api.ReplaceServerFileAsync(job.Id, requestPath, source, timeout.Token);
                 string backup = Path.Combine(server, ConflictCopyPath.Create("file.txt", job.Id));
                 if (changed)
                 {
@@ -136,6 +156,8 @@ namespace HwSync.Windows.Server.Host.Tests
                     if (preserve)
                     {
                         Assert.That(File.ReadAllText(backup), Is.EqualTo("client"));
+                        Assert.That(Path.GetFileName(Directory.GetFiles(server, "*client-conflict*").Single()),
+                            Is.EqualTo(ConflictCopyPath.Create("file.txt", job.Id)));
                     }
 
                     using MemoryStream repeated = new("client"u8.ToArray());
@@ -143,11 +165,11 @@ namespace HwSync.Windows.Server.Host.Tests
                     {
                         if (preserve)
                         {
-                            await api.PreserveClientFileAsync(job.Id, "file.txt", repeated, timeout.Token);
+                            await api.PreserveClientFileAsync(job.Id, requestPath, repeated, timeout.Token);
                         }
                         else
                         {
-                            await api.ReplaceServerFileAsync(job.Id, "file.txt", repeated, timeout.Token);
+                            await api.ReplaceServerFileAsync(job.Id, requestPath, repeated, timeout.Token);
                         }
                     });
                 }

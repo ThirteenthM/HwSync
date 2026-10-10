@@ -57,7 +57,7 @@ namespace HwSync.Windows.AppServices.Client.ViewModels
         /// </summary>
         private void RefreshFolders()
         {
-            SortedSet<string> paths = new(StringComparer.Ordinal) { "" };
+            SortedSet<string> paths = new(StringComparer.OrdinalIgnoreCase) { "" };
             foreach (ChangeRow row in Changes)
             {
                 string folder = row.RelativeFolder;
@@ -89,7 +89,7 @@ namespace HwSync.Windows.AppServices.Client.ViewModels
         {
             string prefix = path.Length == 0 ? "" : path + "/";
             FolderNode[] children = paths.Where(candidate => candidate.Length > path.Length
-                && candidate.StartsWith(prefix, StringComparison.Ordinal)
+                && candidate.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)
                 && !candidate[prefix.Length..].Contains('/'))
                 .Select(candidate => CreateFolderNode(candidate, paths)).ToArray();
             string name = path.Length == 0 ? "Все папки" : path[(path.LastIndexOf('/') + 1)..];
@@ -101,9 +101,10 @@ namespace HwSync.Windows.AppServices.Client.ViewModels
         /// </summary>
         private void RefreshVisibleChanges()
         {
-            VisibleChanges = Changes.Where(row => ShowUnchanged || !row.IsUnchanged).Where(row => row.RelativeFolder == SelectedFolderPath
+            VisibleChanges = Changes.Where(row => ShowUnchanged || !row.IsUnchanged)
+                .Where(row => string.Equals(row.RelativeFolder, SelectedFolderPath, StringComparison.OrdinalIgnoreCase)
                 || IncludeSubfolders && (SelectedFolderPath.Length == 0
-                    || row.RelativeFolder.StartsWith(SelectedFolderPath + "/", StringComparison.Ordinal))).ToArray();
+                    || row.RelativeFolder.StartsWith(SelectedFolderPath + "/", StringComparison.OrdinalIgnoreCase))).ToArray();
             OnPropertyChanged(nameof(VisibleChanges));
             OnPropertyChanged(nameof(ResultSummary));
         }

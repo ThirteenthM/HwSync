@@ -137,5 +137,43 @@ namespace HwSync.Core.Tests.Services
             Assert.That(changes.Single().ChangeType,
                 Is.EqualTo(FileChangeType.Modified));
         }
+
+        /// <summary>
+        /// Сопоставляет Windows-пути без учёта регистра и сохраняет написание обеих сторон.
+        /// </summary>
+        [TestCase("docs/Report.txt", "DOCS/report.txt", false)]
+        [TestCase("docs/Report.txt", "DOCS/report.txt", true)]
+        [TestCase("Документы/Отчёт.txt", "документы/ОТЧЁТ.txt", false)]
+        [TestCase("Документы/Отчёт.txt", "документы/ОТЧЁТ.txt", true)]
+        public void Compare_PathCaseDiffers_ReturnsSinglePair(string clientPath, string serverPath, bool modified)
+        {
+            IChangeComparer comparer = new ChangeComparer();
+            FileSnapshot client = new(clientPath, 10, CreateLastWriteTimeUtc());
+            FileSnapshot server = new(serverPath, modified ? 20 : 10, CreateLastWriteTimeUtc());
+
+            IReadOnlyCollection<FileChange> changes = comparer.Compare([client], [server]);
+
+            Assert.That(changes, Has.Count.EqualTo(1));
+            Assert.That(changes.Single(), Is.EqualTo(new FileChange(
+                modified ? FileChangeType.Modified : FileChangeType.Unchanged, client, server)));
+        }
+
+        /// <summary>
+        /// Не выбирает произвольно одну из двух записей одного Windows-пути.
+        /// </summary>
+        [TestCase(false)]
+        [TestCase(true)]
+        public void Compare_DuplicateWindowsPaths_RejectsSnapshot(bool inPrevious)
+        {
+            IChangeComparer comparer = new ChangeComparer();
+            FileSnapshot[] ambiguous =
+            [
+                new("docs/Report.txt", 10, CreateLastWriteTimeUtc()),
+                new("DOCS/report.txt", 20, CreateLastWriteTimeUtc())
+            ];
+
+            Assert.Throws<ArgumentException>(() => comparer.Compare(
+                inPrevious ? ambiguous : [], inPrevious ? [] : ambiguous));
+        }
     }
 }

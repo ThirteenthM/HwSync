@@ -4,7 +4,7 @@ using HwSync.Abstractions.Models;
 namespace HwSync.Core.Services
 {
     /// <summary>
-    /// Сравнивает снимки по пути, размеру и времени изменения.
+    /// Сравнивает снимки по Windows-пути без учёта регистра, размеру и времени изменения.
     /// </summary>
     public sealed class ChangeComparer : IChangeComparer
     {
@@ -16,8 +16,8 @@ namespace HwSync.Core.Services
             IReadOnlyCollection<FileSnapshot> current
         )
         {
-            Dictionary<string, FileSnapshot> previousByPath = previous.ToDictionary(x => x.RelativePath);
-            Dictionary<string, FileSnapshot> currentByPath = current.ToDictionary(x => x.RelativePath);
+            Dictionary<string, FileSnapshot> previousByPath = previous.ToDictionary(x => x.RelativePath, StringComparer.OrdinalIgnoreCase);
+            Dictionary<string, FileSnapshot> currentByPath = current.ToDictionary(x => x.RelativePath, StringComparer.OrdinalIgnoreCase);
 
             List<FileChange> changes = [];
 

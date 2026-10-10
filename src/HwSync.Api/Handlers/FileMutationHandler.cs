@@ -44,8 +44,9 @@ namespace HwSync.Api.Handlers
                 FileMutationOperation.DeleteCompared or FileMutationOperation.VerifyUnchanged => FileChangeType.Modified,
                 _ => FileChangeType.Deleted
             };
-            FileChange? change = job.Changes?.FirstOrDefault(item => (item.ChangeType == kind || kind == FileChangeType.Modified && item.ChangeType == FileChangeType.Unchanged)
-                && (item.Current ?? item.Previous)?.RelativePath == relativePath);
+            FileChange? change = job.Changes?.FirstOrDefault(item =>
+                (item.ChangeType == kind || kind == FileChangeType.Modified && item.ChangeType == FileChangeType.Unchanged)
+                && string.Equals((item.Current ?? item.Previous)?.RelativePath, relativePath, StringComparison.OrdinalIgnoreCase));
 
             if (change is null)
             {
@@ -68,7 +69,7 @@ namespace HwSync.Api.Handlers
                 }
                 else
                 {
-                    _files.EnsureMissing(job.SourceRootPath, relativePath);
+                    _files.EnsureMissing(job.SourceRootPath, change.Previous!.RelativePath);
                 }
                 return new NoContentResult();
             }

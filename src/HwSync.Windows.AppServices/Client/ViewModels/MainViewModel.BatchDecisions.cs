@@ -22,10 +22,10 @@ namespace HwSync.Windows.AppServices.Client.ViewModels
                 return;
             }
 
-            HashSet<string> selected = new(choice.Paths, StringComparer.Ordinal);
-            HashSet<string> visible = new(VisibleChanges.Select(row => row.Path), StringComparer.Ordinal);
-            HashSet<string> duplicates = new(Changes.GroupBy(row => row.Path, StringComparer.Ordinal)
-                .Where(group => group.Count() > 1).Select(group => group.Key), StringComparer.Ordinal);
+            HashSet<string> selected = new(choice.Paths, StringComparer.OrdinalIgnoreCase);
+            HashSet<string> visible = new(VisibleChanges.Select(row => row.Path), StringComparer.OrdinalIgnoreCase);
+            HashSet<string> duplicates = new(Changes.GroupBy(row => row.Path, StringComparer.OrdinalIgnoreCase)
+                .Where(group => group.Count() > 1).Select(group => group.Key), StringComparer.OrdinalIgnoreCase);
             int updated = 0;
             Changes = Changes.Select(row =>
             {

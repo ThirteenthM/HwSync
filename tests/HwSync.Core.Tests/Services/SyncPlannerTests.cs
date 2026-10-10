@@ -48,5 +48,25 @@ namespace HwSync.Core.Tests.Services
             Assert.Throws<ArgumentException>(() => planner.Create([
                 new(FileChangeType.Created, null, new(path, 1, DateTime.UnixEpoch))], SyncMode.Update));
         }
+
+        /// <summary>
+        /// Планирует одну операцию для пары путей с разным регистром.
+        /// </summary>
+        [TestCase(FileChangeType.Unchanged, SyncMode.Update, SyncAction.KeepOnClient)]
+        [TestCase(FileChangeType.Modified, SyncMode.Update, SyncAction.ReplaceOnClient)]
+        [TestCase(FileChangeType.Modified, SyncMode.Mirror, SyncAction.ReplaceOnClient)]
+        [TestCase(FileChangeType.Modified, SyncMode.CopyMissing, SyncAction.KeepOnClient)]
+        public void Create_PathCaseDiffers_AcceptsPair(FileChangeType kind, SyncMode mode, SyncAction action)
+        {
+            FileSnapshot client = new("docs/Report.txt", 10, DateTime.UnixEpoch);
+            FileSnapshot server = new("DOCS/report.txt", kind == FileChangeType.Modified ? 20 : 10, DateTime.UnixEpoch);
+            ISyncPlanner planner = new SyncPlanner();
+
+            SyncPlan plan = planner.Create([new(kind, client, server)], mode);
+
+            Assert.That(plan.Items.Single().Action, Is.EqualTo(action));
+            Assert.That(plan.Items.Single().ClientFile, Is.EqualTo(client));
+            Assert.That(plan.Items.Single().ServerFile, Is.EqualTo(server));
+        }
     }
 }

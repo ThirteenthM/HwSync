@@ -11,6 +11,33 @@ namespace HwSync.Core.Tests.Infrastructure;
 public class DirectorySnapshotProviderTests
 {
     /// <summary>
+    /// Исключает служебные файлы, но сохраняет обычные tmp и одноимённые каталоги.
+    /// </summary>
+    [Test]
+    public void GetSnapshot_ExcludesOnlyTransferTemporaryFiles()
+    {
+        using TemporaryDirectory directory = new();
+        string temporaryName = ".hwsync-0123456789abcdef0123456789abcdef.tmp";
+        string nested = Path.Combine(directory.Path, "nested");
+        Directory.CreateDirectory(nested);
+        File.WriteAllText(Path.Combine(directory.Path, temporaryName), "partial");
+        File.WriteAllText(Path.Combine(nested, temporaryName.ToUpperInvariant()), "abandoned");
+        string[] ordinaryNames = ["notes.tmp", ".hwsync-not-a-guid.tmp", ".hwsync-0123456789abcdef0123456789abcdef.tmp.bak"];
+        foreach (string name in ordinaryNames)
+        {
+            File.WriteAllText(Path.Combine(directory.Path, name), "user data");
+        }
+
+        string namedDirectory = Path.Combine(directory.Path, ".hwsync-ffffffffffffffffffffffffffffffff.tmp");
+        Directory.CreateDirectory(namedDirectory);
+        File.WriteAllText(Path.Combine(namedDirectory, "inside.txt"), "user data");
+        DirectorySnapshotProvider provider = new();
+        IReadOnlyCollection<FileSnapshot> snapshot = provider.GetSnapshot(directory.Path);
+        Assert.That(snapshot.Select(file => file.RelativePath), Is.EquivalentTo(
+            ordinaryNames.Append(Path.Combine(".hwsync-ffffffffffffffffffffffffffffffff.tmp", "inside.txt"))));
+    }
+
+    /// <summary>
     /// Проверяет чтение атрибутов файла в папке.
     /// </summary>
     [Test]

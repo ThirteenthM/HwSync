@@ -54,7 +54,7 @@ namespace HwSync.Windows.AppServices.Client.ViewModels
                 return false;
             }
 
-            ChangeRow[] matching = Changes.Where(row => row.Path == choice.Path).ToArray();
+            ChangeRow[] matching = Changes.Where(row => string.Equals(row.Path, choice.Path, StringComparison.OrdinalIgnoreCase)).ToArray();
             return matching.Length == 1 && matching[0].ActionChoices.Any(item => item.Action == choice.Action);
         }
 
@@ -68,7 +68,7 @@ namespace HwSync.Windows.AppServices.Client.ViewModels
                 return;
             }
 
-            Changes = Changes.Select(row => row.Path == choice!.Path
+            Changes = Changes.Select(row => string.Equals(row.Path, choice!.Path, StringComparison.OrdinalIgnoreCase)
                 ? row with { Action = choice.Action, IsManualDecision = true }
                 : row).ToArray();
             Error = "";

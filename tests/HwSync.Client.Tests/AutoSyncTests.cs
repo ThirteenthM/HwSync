@@ -20,24 +20,29 @@ namespace HwSync.Client.Tests
         /// </summary>
         [TestCase(true)]
         [TestCase(false)]
-        public async Task DeletionReview_SelectsIndividualCopies(bool server)
+        [TestCase(true, true)]
+        [TestCase(false, true)]
+        public async Task DeletionReview_SelectsIndividualCopies(bool server, bool differentCase = false)
         {
             string root = CreateDirectory();
-            TestClient api = new();
+            TestClient api = new()
+            {
+                DifferentPathCase = differentCase
+            };
             using MainViewModel model = CreateModel(root, api, new());
             await model.StartCommand.ExecuteAsync(null);
             model.SetBatchDecisionCommand.Execute(new(model.Changes.Select(row => row.Path).ToArray(), FileSyncDecision.DeleteBoth));
             model.ReviewDeletions = candidates =>
             {
                 Assert.That(candidates, Has.Count.EqualTo(4));
-                Assert.That(candidates.Count(file => file.Path == "conflict.txt"), Is.EqualTo(2));
-                return candidates.Where(file => file.Path == "conflict.txt" && file.OnServer == server).ToArray();
+                Assert.That(candidates.Count(file => string.Equals(file.Path, "conflict.txt", StringComparison.OrdinalIgnoreCase)), Is.EqualTo(2));
+                return candidates.Where(file => string.Equals(file.Path, "conflict.txt", StringComparison.OrdinalIgnoreCase) && file.OnServer == server).ToArray();
             };
             await model.AutoSyncCommand.ExecuteAsync(null);
             Assert.That(model.Error, Is.Empty);
-            Assert.That(model.Changes.Single(row => row.Path == "conflict.txt").Action,
+            Assert.That(model.Changes.Single(row => string.Equals(row.Path, "conflict.txt", StringComparison.OrdinalIgnoreCase)).Action,
                 Is.EqualTo(server ? FileSyncDecision.DeleteOnServer : FileSyncDecision.DeleteOnClient));
-            Assert.That(model.Changes.Where(row => row.Path != "conflict.txt").All(row => row.Action == FileSyncDecision.Skip), Is.True);
+            Assert.That(model.Changes.Where(row => !string.Equals(row.Path, "conflict.txt", StringComparison.OrdinalIgnoreCase)).All(row => row.Action == FileSyncDecision.Skip), Is.True);
             Assert.That(File.Exists(Path.Combine(root, "conflict.txt")), Is.EqualTo(server));
             Assert.That(File.Exists(Path.Combine(root, "client.txt")), Is.True);
             Assert.That(api.Deletions, Is.EqualTo(server ? 1 : 0));
@@ -90,14 +95,18 @@ namespace HwSync.Client.Tests
         /// <summary>
         /// Просмотр читает нужную сторону и отклоняет изменённый локальный файл.
         /// </summary>
-        [Test]
-        public async Task DeletionPreview_ReadsComparedVersions()
+        [TestCase(false)]
+        [TestCase(true)]
+        public async Task DeletionPreview_ReadsComparedVersions(bool differentCase)
         {
             string root = CreateDirectory();
-            TestClient api = new();
+            TestClient api = new()
+            {
+                DifferentPathCase = differentCase
+            };
             using MainViewModel model = CreateModel(root, api, new());
             await model.StartCommand.ExecuteAsync(null);
-            ChangeRow row = model.Changes.Single(item => item.Path == "conflict.txt");
+            ChangeRow row = model.Changes.Single(item => string.Equals(item.Path, "conflict.txt", StringComparison.OrdinalIgnoreCase));
             DeletionCandidate local = new(row.Path, false, row.PreviousSize!.Value, row.PreviousModifiedUtc!.Value);
             DeletionCandidate remote = new(row.Path, true, row.CurrentSize!.Value, row.CurrentModifiedUtc!.Value);
             Assert.That(System.Text.Encoding.UTF8.GetString(await model.LoadDeletionPreviewAsync(local, CancellationToken.None)), Is.EqualTo("local conflict"));
@@ -115,12 +124,15 @@ namespace HwSync.Client.Tests
         /// </summary>
         [TestCase(false)]
         [TestCase(true)]
-        public async Task DeleteBoth_RequiresConfirmation(bool confirmed)
+        [TestCase(false, true)]
+        [TestCase(true, true)]
+        public async Task DeleteBoth_RequiresConfirmation(bool confirmed, bool differentCase = false)
         {
             string root = CreateDirectory();
             TestClient api = new()
             {
-                EqualConflict = true
+                EqualConflict = true,
+                DifferentPathCase = differentCase
             };
             using MainViewModel model = CreateModel(root, api, new());
             await model.StartCommand.ExecuteAsync(null);
@@ -412,7 +424,9 @@ namespace HwSync.Client.Tests
         /// </summary>
         [TestCase(false)]
         [TestCase(true)]
-        public async Task AutoSync_MatchesDecisionsByPath(bool filterServerFile)
+        [TestCase(false, true)]
+        [TestCase(true, true)]
+        public async Task AutoSync_MatchesDecisionsByPath(bool filterServerFile, bool differentCase = false)
         {
             string root = CreateDirectory();
             TestClient api = new();
@@ -423,7 +437,8 @@ namespace HwSync.Client.Tests
             });
             await model.StartCommand.ExecuteAsync(null);
             ChangeRow[] rows = model.Changes.Reverse()
-                .Where(row => !filterServerFile || row.Path != "server.txt").ToArray();
+                .Where(row => !filterServerFile || row.Path != "server.txt")
+                .Select(row => differentCase ? row with { Path = row.Path.ToUpperInvariant() } : row).ToArray();
             // Имитируем замену списка будущей сортировкой или фильтром формы.
             typeof(MainViewModel).GetProperty(nameof(MainViewModel.Changes))!.SetValue(model, rows);
 
@@ -507,7 +522,9 @@ namespace HwSync.Client.Tests
         /// </summary>
         [TestCase(false)]
         [TestCase(true)]
-        public async Task AutoSync_RejectsDuplicatePaths(bool conflictingDecisions)
+        [TestCase(false, true)]
+        [TestCase(true, true)]
+        public async Task AutoSync_RejectsDuplicatePaths(bool conflictingDecisions, bool differentCase = false)
         {
             string root = CreateDirectory();
             TestClient api = new();
@@ -520,6 +537,7 @@ namespace HwSync.Client.Tests
             ChangeRow first = model.Changes.First();
             ChangeRow duplicate = first with
             {
+                Path = differentCase ? first.Path.ToUpperInvariant() : first.Path,
                 Action = conflictingDecisions ? FileSyncDecision.DeleteOnServer : first.Action
             };
             typeof(MainViewModel).GetProperty(nameof(MainViewModel.Changes))!
@@ -643,10 +661,16 @@ namespace HwSync.Client.Tests
         [TestCase(FileSyncDecision.KeepBoth)]
         [TestCase(FileSyncDecision.Skip)]
         [TestCase(FileSyncDecision.AskUser)]
-        public async Task Conflict_ChoiceIsDeferredUntilAutoSync(FileSyncDecision decision)
+        [TestCase(FileSyncDecision.ReplaceOnClient, true)]
+        [TestCase(FileSyncDecision.ReplaceOnServer, true)]
+        [TestCase(FileSyncDecision.KeepBoth, true)]
+        public async Task Conflict_ChoiceIsDeferredUntilAutoSync(FileSyncDecision decision, bool differentCase = false)
         {
             string root = CreateDirectory();
-            TestClient api = new();
+            TestClient api = new()
+            {
+                DifferentPathCase = differentCase
+            };
             using MainViewModel model = CreateModel(root, api, new()
             {
                 MissingOnClient = SyncRule.Skip,
@@ -702,6 +726,36 @@ namespace HwSync.Client.Tests
             Assert.That(model.Changes.Single(row => row.IsConflict), Is.EqualTo(conflict));
         }
         /// <summary>
+        /// Объединяет разные написания папки и применяет решения ко всем видимым путям.
+        /// </summary>
+        [Test]
+        public async Task Folders_PathCaseDiffers_GroupsWindowsFolders()
+        {
+            using MainViewModel model = CreateModel(CreateDirectory(), new(), new());
+            await model.StartCommand.ExecuteAsync(null);
+            ChangeRow[] rows =
+            [
+                new("server", "docs/first.txt", null, 1),
+                new("server", "DOCS/second.txt", null, 1),
+                new("server", "Docs/Nested/third.txt", null, 1),
+                new("server", "docs-other/fourth.txt", null, 1)
+            ];
+            typeof(MainViewModel).GetProperty(nameof(MainViewModel.Changes))!.SetValue(model, rows);
+
+            Assert.That(model.Folders.Single().Children, Has.Count.EqualTo(2));
+            Assert.That(model.Folders.Single().Children.First().Children.Single().RelativePath, Is.EqualTo("Docs/Nested"));
+            model.SelectedFolderPath = "DOCS";
+            Assert.That(model.VisibleChanges, Has.Count.EqualTo(3));
+            model.IncludeSubfolders = false;
+            Assert.That(model.VisibleChanges, Has.Count.EqualTo(2));
+            model.SetFileDecisionCommand.Execute(new("DOCS/FIRST.TXT", FileSyncDecision.CopyToClient, ""));
+            Assert.That(model.Changes.First().Action, Is.EqualTo(FileSyncDecision.CopyToClient));
+            model.SetBatchDecisionCommand.Execute(new(["DOCS/FIRST.TXT", "docs/SECOND.txt"], FileSyncDecision.Skip));
+            Assert.That(model.VisibleChanges.All(row => row.Action == FileSyncDecision.Skip && row.IsManualDecision), Is.True);
+            Assert.That(model.Changes.Last().IsManualDecision, Is.False);
+        }
+
+        /// <summary>
         /// Создаёт независимую папку с локальным файлом и конфликтом.
         /// </summary>
         private static string CreateDirectory()
@@ -754,6 +808,8 @@ namespace HwSync.Client.Tests
             {
                 get; init;
             }
+
+            public bool DifferentPathCase { get; init; }
 
             public bool EqualConflict
             {
@@ -814,11 +870,13 @@ namespace HwSync.Client.Tests
             {
                 FileSnapshotDto local = request.ClientSnapshot.Single(file => file.RelativePath == "client.txt");
                 FileSnapshotDto conflict = request.ClientSnapshot.Single(file => file.RelativePath == "conflict.txt");
+                FileSnapshotDto serverConflict = new(DifferentPathCase ? "CONFLICT.TXT" : conflict.RelativePath,
+                    EqualConflict ? conflict.Size : 8, EqualConflict ? conflict.LastWriteTimeUtc : DateTime.UtcNow);
                 return Task.FromResult(new ScanJobResponse(Guid.NewGuid(), ScanJobState.Completed,
                     DateTimeOffset.UtcNow, DateTimeOffset.UtcNow,
                     [new(FileChangeKind.Created, null, new("server.txt", 6, DateTime.UtcNow)),
                      new(FileChangeKind.Deleted, local, null),
-                     new(EqualConflict ? FileChangeKind.Unchanged : FileChangeKind.Modified, conflict, EqualConflict ? conflict : new("conflict.txt", 8, DateTime.UtcNow))], null));
+                     new(EqualConflict ? FileChangeKind.Unchanged : FileChangeKind.Modified, conflict, serverConflict)], null));
             }
 
             /// <summary>
@@ -844,7 +902,7 @@ namespace HwSync.Client.Tests
                     await Task.Delay(Timeout.Infinite, token);
                 }
 
-                await target.WriteAsync(System.Text.Encoding.UTF8.GetBytes(relativePath == "conflict.txt" ? "server!!" : "server"), token);
+                await target.WriteAsync(System.Text.Encoding.UTF8.GetBytes(string.Equals(relativePath, "conflict.txt", StringComparison.OrdinalIgnoreCase) ? "server!!" : "server"), token);
             }
 
             /// <summary>

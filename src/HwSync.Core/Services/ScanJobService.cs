@@ -28,9 +28,10 @@ namespace HwSync.Core.Services
             }
             if (request.PreviousSnapshot is null || request.PreviousSnapshot.Any(file =>
                 file is null || string.IsNullOrWhiteSpace(file.RelativePath))
-                || request.PreviousSnapshot.Select(file => file.RelativePath).Distinct().Count() != request.PreviousSnapshot.Count)
+                || request.PreviousSnapshot.Select(file => file.RelativePath)
+                    .Distinct(StringComparer.OrdinalIgnoreCase).Count() != request.PreviousSnapshot.Count)
             {
-                throw new ArgumentException("PreviousSnapshot должен содержать файлы с непустыми уникальными путями.");
+                throw new ArgumentException("PreviousSnapshot должен содержать файлы с непустыми путями, уникальными без учёта регистра.");
             }
             ChangeScanRequest snapshot = new(request.RootPath, request.PreviousSnapshot.ToArray());
             lock (_gate)

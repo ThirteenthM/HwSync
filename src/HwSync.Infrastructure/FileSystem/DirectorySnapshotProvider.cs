@@ -20,18 +20,19 @@ public sealed class DirectorySnapshotProvider : IFileSnapshotProvider
         {
             cancellationToken.ThrowIfCancellationRequested();
             ThrowIfReparsePoint(File.GetAttributes(directory));
-            foreach (string entry in Directory.EnumerateFileSystemEntries(directory))
+            foreach (FileSystemInfo entry in new DirectoryInfo(directory).EnumerateFileSystemInfos())
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                FileAttributes attributes = File.GetAttributes(entry);
+                // Атрибуты получены при перечислении: временный файл может уже исчезнуть.
+                FileAttributes attributes = entry.Attributes;
                 ThrowIfReparsePoint(attributes);
                 if ((attributes & FileAttributes.Directory) != 0)
                 {
-                    directories.Push(entry);
+                    directories.Push(entry.FullName);
                 }
-                else
+                else if (!TransferTemporaryFile.IsFileName(entry.Name))
                 {
-                    yield return entry;
+                    yield return entry.FullName;
                 }
             }
         }

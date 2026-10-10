@@ -169,5 +169,21 @@ namespace HwSync.Core.Tests.Services
                 await worker;
             }
         }
+
+        /// <summary>
+        /// Отклоняет неоднозначный клиентский снимок до постановки задания в очередь.
+        /// </summary>
+        [Test]
+        public void Start_DuplicateWindowsPaths_RejectsRequest()
+        {
+            ScanJobService jobs = new();
+            ChangeScanRequest request = new(Path.GetTempPath(),
+            [
+                new("docs/Report.txt", 10, DateTime.UnixEpoch),
+                new("DOCS/report.txt", 20, DateTime.UnixEpoch)
+            ]);
+
+            Assert.Throws<ArgumentException>(() => jobs.Start(request));
+        }
     }
 }
