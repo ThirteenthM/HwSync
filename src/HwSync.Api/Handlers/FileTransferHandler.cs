@@ -39,7 +39,7 @@ namespace HwSync.Api.Handlers
                 return new ConflictResult();
             }
             // Выдаём только файлы из результата конкретного завершённого сравнения.
-            FileSnapshot? file = job.Changes?.FirstOrDefault(change => change.Current?.RelativePath == relativePath)?.Current;
+            FileSnapshot? file = job.Changes?.FirstOrDefault(change => RelativeFilePath.Same(change.Current?.RelativePath, relativePath))?.Current;
             if (file is null)
             {
                 return new NotFoundResult();

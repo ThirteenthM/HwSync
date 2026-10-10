@@ -28,7 +28,8 @@ namespace HwSync.Persistence.Sqlite
         {
             ArgumentNullException.ThrowIfNull(snapshot);
             _database.EnsureOutside(rootPath);
-            Dictionary<string, FileSnapshot> current = snapshot.ToDictionary(file => file.RelativePath, StringComparer.OrdinalIgnoreCase);
+            Dictionary<string, FileSnapshot> current = snapshot.ToDictionary(
+                file => RelativeFilePath.Key(file.RelativePath), StringComparer.OrdinalIgnoreCase);
             using SyncDbContext context = _database.CreateContext();
             using IDbContextTransaction transaction = context.Database.BeginTransaction();
             string root = NormalizeRoot(rootPath);
@@ -45,7 +46,7 @@ namespace HwSync.Persistence.Sqlite
             List<FileSnapshotEntity> previous = context.FileSnapshots.Where(item => item.FolderId == folderId).ToList();
             foreach (FileSnapshotEntity file in previous)
             {
-                if (current.TryGetValue(file.RelativePath, out FileSnapshot? updated))
+                if (current.TryGetValue(RelativeFilePath.Key(file.RelativePath), out FileSnapshot? updated))
                 {
                     file.Size = updated.Size;
                     file.ModifiedUtc = updated.LastWriteTimeUtc;
@@ -66,8 +67,8 @@ namespace HwSync.Persistence.Sqlite
                 }
             }
 
-            HashSet<string> knownPaths = new(previous.Select(file => file.RelativePath), StringComparer.OrdinalIgnoreCase);
-            foreach (FileSnapshot file in current.Values.Where(file => !knownPaths.Contains(file.RelativePath)))
+            HashSet<string> knownPaths = new(previous.Select(file => RelativeFilePath.Key(file.RelativePath)), StringComparer.OrdinalIgnoreCase);
+            foreach (FileSnapshot file in current.Values.Where(file => !knownPaths.Contains(RelativeFilePath.Key(file.RelativePath))))
             {
                 context.FileSnapshots.Add(new()
                 {
@@ -80,7 +81,7 @@ namespace HwSync.Persistence.Sqlite
                 .Where(item => item.FolderId == folderId && item.Active).ToList();
             foreach (DeletionEventEntity deletion in activeDeletions)
             {
-                if (current.ContainsKey(deletion.RelativePath))
+                if (current.ContainsKey(RelativeFilePath.Key(deletion.RelativePath)))
                 {
                     deletion.Active = false;
                 }

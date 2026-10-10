@@ -1,3 +1,4 @@
+using HwSync.Abstractions.FileSystem;
 using HwSync.Abstractions.Models;
 using HwSync.Abstractions.Services;
 
@@ -24,7 +25,7 @@ namespace HwSync.Core.Services
             {
                 string path = change.Current?.RelativePath ?? change.Previous?.RelativePath
                     ?? throw new ArgumentException("У изменения отсутствует путь файла.");
-                string normalized = path.Replace('\\', '/');
+                string normalized = RelativeFilePath.Key(path);
                 if (string.IsNullOrWhiteSpace(normalized) || normalized.StartsWith('/') || normalized.Contains(':')
                     || normalized.Split('/').Any(part => part is "" or "." or "..") || !paths.Add(normalized))
                 {
@@ -33,10 +34,10 @@ namespace HwSync.Core.Services
                 SyncAction action = change.ChangeType switch
                 {
                     FileChangeType.Unchanged when change.Previous is not null && change.Current is not null
-                        && change.Previous.RelativePath == change.Current.RelativePath => SyncAction.KeepOnClient,
+                        && RelativeFilePath.Same(change.Previous.RelativePath, change.Current.RelativePath) => SyncAction.KeepOnClient,
                     FileChangeType.Created when change.Previous is null && change.Current is not null => SyncAction.CopyToClient,
                     FileChangeType.Modified when change.Previous is not null && change.Current is not null
-                        && change.Previous.RelativePath == change.Current.RelativePath => mode == SyncMode.CopyMissing ? SyncAction.KeepOnClient : SyncAction.ReplaceOnClient,
+                        && RelativeFilePath.Same(change.Previous.RelativePath, change.Current.RelativePath) => mode == SyncMode.CopyMissing ? SyncAction.KeepOnClient : SyncAction.ReplaceOnClient,
                     FileChangeType.Deleted when change.Previous is not null && change.Current is null =>
                         mode == SyncMode.Mirror ? SyncAction.DeleteFromClient : SyncAction.KeepOnClient,
                     _ => throw new ArgumentException("Некорректное изменение для плана синхронизации.")

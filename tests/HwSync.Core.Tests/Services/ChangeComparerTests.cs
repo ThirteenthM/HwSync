@@ -121,6 +121,34 @@ namespace HwSync.Core.Tests.Services
         }
 
         /// <summary>
+        /// Разный регистр и разделитель не делят один файл на создание и удаление.
+        /// </summary>
+        [Test]
+        public void Compare_WhenPathDiffersByCaseOrSeparator_ReturnsSingleChange()
+        {
+            FileSnapshot previous = new(@"Photos\A.jpg", 10, CreateLastWriteTimeUtc());
+            FileSnapshot current = new("photos/a.jpg", 10, CreateLastWriteTimeUtc());
+            IChangeComparer comparer = new ChangeComparer();
+
+            IReadOnlyCollection<FileChange> changes = comparer.Compare([previous], [current]);
+
+            Assert.That(changes.Single(), Is.EqualTo(new FileChange(FileChangeType.Unchanged, previous, current)));
+        }
+
+        /// <summary>
+        /// Повтор одного пути в снимке отклоняется.
+        /// </summary>
+        [Test]
+        public void Compare_WhenSnapshotRepeatsPath_Throws()
+        {
+            FileSnapshot first = new("A.txt", 1, CreateLastWriteTimeUtc());
+            FileSnapshot second = new("a.txt", 1, CreateLastWriteTimeUtc());
+            IChangeComparer comparer = new ChangeComparer();
+
+            Assert.Throws<ArgumentException>(() => comparer.Compare([first, second], []));
+        }
+
+        /// <summary>
         /// Проверяет обнаружение изменения времени записи.
         /// </summary>
         [Test]

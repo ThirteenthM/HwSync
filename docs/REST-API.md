@@ -38,7 +38,7 @@ Invoke-RestMethod -Uri "http://localhost:5080/api/v1/scan-jobs/$($job.id)"
 Invoke-RestMethod -Method Post -Uri "http://localhost:5080/api/v1/scan-jobs/$($job.id)/cancel"
 ```
 
-ServerRootPath — абсолютный путь на компьютере сервера, а не на компьютере будущего сетевого клиента. ClientSnapshot — обязательный массив FileSnapshot клиентской папки (relativePath, size, lastWriteTimeUtc). Пустой массив означает, что все найденные файлы будут отмечены Created. Сервер не сохраняет предыдущий снимок автоматически.
+ServerRootPath — абсолютный путь на компьютере сервера, а не на компьютере будущего сетевого клиента. Каталог должен совпадать с элементом Storage:AllowedRoots или лежать внутри него; иначе ответ 400. ClientSnapshot — обязательный массив FileSnapshot клиентской папки (relativePath, size, lastWriteTimeUtc). Пустой массив означает, что все найденные файлы будут отмечены Created. Сервер не сохраняет предыдущий снимок автоматически. Пути файлов сравниваются без учёта регистра и вида разделителя.
 
 ## Выполнение и ограничения
 

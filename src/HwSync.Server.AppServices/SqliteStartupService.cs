@@ -1,5 +1,6 @@
-using Microsoft.Extensions.Hosting;
+using HwSync.Abstractions.FileSystem;
 using HwSync.Persistence.Sqlite.Migrations;
+using Microsoft.Extensions.Hosting;
 
 namespace HwSync.Server.AppServices
 {
@@ -11,10 +12,11 @@ namespace HwSync.Server.AppServices
         private readonly SqliteMigrator _migrator;
 
         /// <summary>
-        /// Принимает миграции базы серверного участника.
+        /// Принимает миграции и проверяет список разрешённых каталогов до открытия базы.
         /// </summary>
-        public SqliteStartupService(SqliteMigrator migrator)
+        public SqliteStartupService(SqliteMigrator migrator, IAllowedServerRoots roots)
         {
+            ArgumentNullException.ThrowIfNull(roots);
             _migrator = migrator;
         }
 

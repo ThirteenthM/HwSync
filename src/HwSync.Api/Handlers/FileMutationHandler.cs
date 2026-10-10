@@ -45,7 +45,7 @@ namespace HwSync.Api.Handlers
                 _ => FileChangeType.Deleted
             };
             FileChange? change = job.Changes?.FirstOrDefault(item => (item.ChangeType == kind || kind == FileChangeType.Modified && item.ChangeType == FileChangeType.Unchanged)
-                && (item.Current ?? item.Previous)?.RelativePath == relativePath);
+                && RelativeFilePath.Same((item.Current ?? item.Previous)?.RelativePath, relativePath));
 
             if (change is null)
             {

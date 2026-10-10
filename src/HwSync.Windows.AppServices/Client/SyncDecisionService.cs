@@ -1,3 +1,4 @@
+using HwSync.Abstractions.FileSystem;
 using HwSync.Windows.Contract.Client.Configuration;
 using HwSync.Windows.Contract.Client.Services;
 using HwSync.Windows.Contract.Client.ViewModels;
@@ -76,7 +77,7 @@ namespace HwSync.Windows.AppServices.Client
             FileDeletionEvidence deletion, SyncRule rule, FileSyncDecision deleteAction)
         {
             if (deletion.PreviousFile is not { } previous
-                || !StringComparer.OrdinalIgnoreCase.Equals(previous.RelativePath, remaining.RelativePath)
+                || !RelativeFilePath.Same(previous.RelativePath, remaining.RelativePath)
                 || previous.Size != remaining.Size || previous.LastWriteTimeUtc != remaining.LastWriteTimeUtc)
             {
                 return FileSyncDecision.AskUser;

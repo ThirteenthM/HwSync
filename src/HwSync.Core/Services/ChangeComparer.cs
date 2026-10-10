@@ -1,3 +1,4 @@
+using HwSync.Abstractions.FileSystem;
 using HwSync.Abstractions.Services;
 using HwSync.Abstractions.Models;
 
@@ -5,6 +6,7 @@ namespace HwSync.Core.Services
 {
     /// <summary>
     /// Сравнивает снимки по пути, размеру и времени изменения.
+    /// Один файл с разным регистром или разделителем остаётся одним путём.
     /// </summary>
     public sealed class ChangeComparer : IChangeComparer
     {
@@ -16,14 +18,14 @@ namespace HwSync.Core.Services
             IReadOnlyCollection<FileSnapshot> current
         )
         {
-            Dictionary<string, FileSnapshot> previousByPath = previous.ToDictionary(x => x.RelativePath);
-            Dictionary<string, FileSnapshot> currentByPath = current.ToDictionary(x => x.RelativePath);
+            Dictionary<string, FileSnapshot> previousByPath = Index(previous);
+            Dictionary<string, FileSnapshot> currentByPath = Index(current);
 
             List<FileChange> changes = [];
 
             foreach (FileSnapshot currentFile in currentByPath.Values)
             {
-                if (!previousByPath.TryGetValue(currentFile.RelativePath, out FileSnapshot? previousFile))
+                if (!previousByPath.TryGetValue(RelativeFilePath.Key(currentFile.RelativePath), out FileSnapshot? previousFile))
                 {
                     // у текущего файла нет предыдущего - новый файл.
                     changes.Add(new(FileChangeType.Created, Previous: null, Current: currentFile));
@@ -43,7 +45,7 @@ namespace HwSync.Core.Services
 
             foreach (FileSnapshot previousFile in previousByPath.Values)
             {
-                if (!currentByPath.ContainsKey(previousFile.RelativePath))
+                if (!currentByPath.ContainsKey(RelativeFilePath.Key(previousFile.RelativePath)))
                 {
                     // был файл предыдущий и щас его нет среди текущих - файл был удален.
                     changes.Add(new(FileChangeType.Deleted, Previous: previousFile, Current: null));
@@ -61,11 +63,28 @@ namespace HwSync.Core.Services
             FileSnapshot currentFile
         )
         {
-            // !!!! пока признак различия - это разный размер и разная дата последней модификации.
+            // Пока признак различия — другой размер или другое время записи.
             return
                 previousFile.Size != currentFile.Size
                 ||
                 previousFile.LastWriteTimeUtc != currentFile.LastWriteTimeUtc;
+        }
+
+        /// <summary>
+        /// Индексирует снимок по общему ключу пути.
+        /// </summary>
+        private static Dictionary<string, FileSnapshot> Index(IReadOnlyCollection<FileSnapshot> files)
+        {
+            Dictionary<string, FileSnapshot> result = new(StringComparer.OrdinalIgnoreCase);
+            foreach (FileSnapshot file in files)
+            {
+                if (!result.TryAdd(RelativeFilePath.Key(file.RelativePath), file))
+                {
+                    throw new ArgumentException("Снимок содержит один путь с разным регистром или разделителем.");
+                }
+            }
+
+            return result;
         }
     }
 }

@@ -9,6 +9,22 @@ namespace HwSync.Core.Tests.Services
     public class ScanJobServiceTests
     {
         /// <summary>
+        /// Повтор пути с другим регистром не ставится в очередь.
+        /// </summary>
+        [Test]
+        public void Start_DuplicatePathIgnoringCase_IsRejected()
+        {
+            ScanJobService jobs = new();
+            ChangeScanRequest request = new(Path.GetTempPath(),
+            [
+                new("A.txt", 1, DateTime.UnixEpoch),
+                new(@"a.txt", 1, DateTime.UnixEpoch)
+            ]);
+
+            Assert.Throws<ArgumentException>(() => jobs.Start(request));
+        }
+
+        /// <summary>
         /// Остановка хоста прерывает текущее сканирование через переданный токен.
         /// </summary>
         [Test]

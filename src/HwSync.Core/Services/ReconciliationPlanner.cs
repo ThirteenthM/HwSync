@@ -1,3 +1,4 @@
+using HwSync.Abstractions.FileSystem;
 using HwSync.Abstractions.Models;
 using HwSync.Abstractions.Services;
 
@@ -104,7 +105,7 @@ namespace HwSync.Core.Services
             foreach (FileVersion file in files)
             {
                 ArgumentNullException.ThrowIfNull(file);
-                string path = file.RelativePath?.Replace('\\', '/') ?? "";
+                string path = RelativeFilePath.Key(file.RelativePath ?? "");
                 if (string.IsNullOrWhiteSpace(path) || path.Contains(':')
                     || path.Split('/').Any(part => part is "" or "." or ".." || part.EndsWith('.') || part.EndsWith(' '))
                     || file.Revision < 0 || file.ContentHash is not null

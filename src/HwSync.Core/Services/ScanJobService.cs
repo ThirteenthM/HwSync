@@ -1,4 +1,5 @@
 using System.Threading.Channels;
+using HwSync.Abstractions.FileSystem;
 using HwSync.Abstractions.Models;
 using HwSync.Abstractions.Services;
 
@@ -27,11 +28,19 @@ namespace HwSync.Core.Services
             {
                 throw new ArgumentException("RootPath должен быть абсолютным путём.");
             }
-            if (request.PreviousSnapshot is null || request.PreviousSnapshot.Any(file =>
-                file is null || string.IsNullOrWhiteSpace(file.RelativePath))
-                || request.PreviousSnapshot.Select(file => file.RelativePath).Distinct().Count() != request.PreviousSnapshot.Count)
+            if (request.PreviousSnapshot is null)
             {
                 throw new ArgumentException("PreviousSnapshot должен содержать файлы с непустыми уникальными путями.");
+            }
+
+            HashSet<string> paths = new(StringComparer.OrdinalIgnoreCase);
+            foreach (FileSnapshot file in request.PreviousSnapshot)
+            {
+                if (file is null || string.IsNullOrWhiteSpace(file.RelativePath)
+                    || !paths.Add(RelativeFilePath.Key(file.RelativePath)))
+                {
+                    throw new ArgumentException("PreviousSnapshot должен содержать файлы с непустыми уникальными путями.");
+                }
             }
             ChangeScanRequest snapshot = new(request.RootPath, request.PreviousSnapshot.ToArray());
             lock (_gate)

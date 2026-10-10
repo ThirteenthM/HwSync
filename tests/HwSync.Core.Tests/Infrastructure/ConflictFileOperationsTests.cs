@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using HwSync.Abstractions.Models;
 using HwSync.Infrastructure.FileSystem;
 
@@ -25,6 +26,9 @@ namespace HwSync.Core.Tests.Infrastructure
             FileSnapshot before = new("file.txt", 8, File.GetLastWriteTimeUtc(path));
             FileSnapshot incoming = new("file.txt", mode == "wrong-size" ? 100 : 3, DateTime.UnixEpoch);
             using CancellationTokenSource cancellation = new();
+            using StringWriter trace = new();
+            using TextWriterTraceListener listener = new(trace);
+            Trace.Listeners.Add(listener);
             try
             {
                 if (mode == "changed-before")
@@ -51,6 +55,7 @@ namespace HwSync.Core.Tests.Infrastructure
                     await replace;
                     Assert.That(File.ReadAllText(path), Is.EqualTo("new"));
                     Assert.That(File.GetLastWriteTimeUtc(path), Is.EqualTo(incoming.LastWriteTimeUtc));
+                    Assert.That(trace.ToString(), Does.Not.Contain("временный файл"));
                 }
                 else
                 {
@@ -62,6 +67,7 @@ namespace HwSync.Core.Tests.Infrastructure
             }
             finally
             {
+                Trace.Listeners.Remove(listener);
                 foreach (string file in Directory.GetFiles(root))
                 {
                     File.Delete(file);
