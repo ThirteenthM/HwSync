@@ -39,6 +39,7 @@ namespace HwSync.Windows.Server.Host.Tests
             await File.WriteAllTextAsync(target, "server");
             WebApplicationBuilder builder = HostBootstrap.CreateBuilder(true, ["Urls=http://127.0.0.1:0"]);
             builder.Configuration["Storage:DatabasePath"] = Path.Combine(root, "state.db");
+            builder.Configuration["Storage:AllowedRoots:0"] = server;
             builder.Logging.ClearProviders();
             await using WebApplication app = builder.Build();
             app.MapHwSyncApi();
@@ -107,6 +108,7 @@ namespace HwSync.Windows.Server.Host.Tests
             DateTime clientTime = DateTime.UtcNow.AddMinutes(-5);
             WebApplicationBuilder builder = HostBootstrap.CreateBuilder(true, ["Urls=http://127.0.0.1:0"]);
             builder.Configuration["Storage:DatabasePath"] = Path.Combine(root, "history", "state.db");
+            builder.Configuration["Storage:AllowedRoots:0"] = server;
             builder.Logging.ClearProviders();
             await using WebApplication app = builder.Build();
             app.MapHwSyncApi();

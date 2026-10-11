@@ -1,4 +1,5 @@
 using System.Threading.Channels;
+using HwSync.Abstractions.FileSystem;
 using HwSync.Abstractions.Models;
 using HwSync.Abstractions.Services;
 
@@ -12,6 +13,7 @@ namespace HwSync.Core.Services
         private const int Capacity = 100;
         private readonly System.Threading.Lock _gate = new();
         private readonly Dictionary<Guid, ScanJob> _jobs = [];
+        private readonly Dictionary<Guid, CancellationTokenSource> _scanCancellations = [];
         private readonly Channel<(Guid Id, ChangeScanRequest Request)> _queue =
             Channel.CreateBounded<(Guid, ChangeScanRequest)>(Capacity);
         private bool _stopping;
@@ -26,12 +28,19 @@ namespace HwSync.Core.Services
             {
                 throw new ArgumentException("RootPath должен быть абсолютным путём.");
             }
-            if (request.PreviousSnapshot is null || request.PreviousSnapshot.Any(file =>
-                file is null || string.IsNullOrWhiteSpace(file.RelativePath))
-                || request.PreviousSnapshot.Select(file => file.RelativePath)
-                    .Distinct(StringComparer.OrdinalIgnoreCase).Count() != request.PreviousSnapshot.Count)
+            if (request.PreviousSnapshot is null)
             {
                 throw new ArgumentException("PreviousSnapshot должен содержать файлы с непустыми путями, уникальными без учёта регистра.");
+            }
+
+            HashSet<string> paths = new(StringComparer.OrdinalIgnoreCase);
+            foreach (FileSnapshot file in request.PreviousSnapshot)
+            {
+                if (file is null || string.IsNullOrWhiteSpace(file.RelativePath)
+                    || !paths.Add(RelativeFilePath.Key(file.RelativePath)))
+                {
+                    throw new ArgumentException("PreviousSnapshot должен содержать файлы с непустыми уникальными путями.");
+                }
             }
             ChangeScanRequest snapshot = new(request.RootPath, request.PreviousSnapshot.ToArray());
             lock (_gate)
@@ -68,16 +77,19 @@ namespace HwSync.Core.Services
         }
 
         /// <summary>
-        /// Запрашивает отмену задания по идентификатору.
+        /// Запрашивает отмену задания и прерывает его чтение.
         /// </summary>
         public ScanJob? Cancel(Guid id)
         {
+            CancellationTokenSource? scan = null;
+            ScanJob result;
             lock (_gate)
             {
                 if (!_jobs.TryGetValue(id, out ScanJob? job))
                 {
                     return null;
                 }
+
                 if (job.Status == ScanJobStatus.Queued)
                 {
                     job = job with
@@ -92,14 +104,20 @@ namespace HwSync.Core.Services
                     {
                         Status = ScanJobStatus.CancellationRequested
                     };
+                    _scanCancellations.TryGetValue(id, out scan);
                 }
+
                 _jobs[id] = job;
-                return job;
+                result = job;
             }
+
+            CancelScan(scan);
+            return result;
         }
 
         /// <summary>
-        /// Последовательно обрабатывает очередь до отмены работы.
+        /// Последовательно обрабатывает очередь до остановки хоста.
+        /// Каждое чтение получает токен, связанный с остановкой хоста и отменой этого задания.
         /// </summary>
         public async Task RunAsync(Func<ChangeScanRequest, CancellationToken, IReadOnlyCollection<FileChange>> scan, CancellationToken stoppingToken)
         {
@@ -108,51 +126,62 @@ namespace HwSync.Core.Services
             {
                 await foreach ((Guid id, ChangeScanRequest request) in _queue.Reader.ReadAllAsync(stoppingToken))
                 {
-                    lock (_gate)
+                    CancellationTokenSource? scanCancellation = TryBeginScan(id, out bool stopping);
+                    if (scanCancellation is null)
                     {
-                        if (_stopping)
+                        if (stopping)
                         {
                             break;
                         }
-                        if (!_jobs.TryGetValue(id, out ScanJob? job) || job.Status != ScanJobStatus.Queued)
-                        {
-                            continue;
-                        }
-                        _jobs[id] = job with
-                        {
-                            Status = ScanJobStatus.Running
-                        };
+
+                        continue;
                     }
-                    IReadOnlyCollection<FileChange>? changes = null;
-                    string? error = null;
+
                     try
                     {
-                        changes = scan(request, stoppingToken);
-                    }
-                    catch (OperationCanceledException) when (stoppingToken.IsCancellationRequested)
-                    {
-                        // Статус Cancelled выставляется ниже по токену остановки,
-                        // даже если callback Register(Stop) ещё не успел выставить _stopping.
-                    }
-                    catch (Exception exception)
-                    {
-                        error = exception is IOException or UnauthorizedAccessException
-                            ? "Не удалось прочитать каталог. Проверьте путь и права доступа."
-                            : "Не удалось выполнить сравнение снимков.";
-                    }
-                    lock (_gate)
-                    {
-                        ScanJob job = _jobs[id];
-                        bool cancelled = _stopping
-                            || job.Status == ScanJobStatus.CancellationRequested
-                            || stoppingToken.IsCancellationRequested;
-                        _jobs[id] = job with
+                        using CancellationTokenSource linked = CancellationTokenSource.CreateLinkedTokenSource(
+                            stoppingToken, scanCancellation.Token);
+                        IReadOnlyCollection<FileChange>? changes = null;
+                        string? error = null;
+                        try
                         {
-                            Status = cancelled ? ScanJobStatus.Cancelled : error is null ? ScanJobStatus.Completed : ScanJobStatus.Failed,
-                            FinishedAt = DateTimeOffset.UtcNow,
-                            Changes = cancelled ? null : changes,
-                            Error = cancelled ? null : error
-                        };
+                            changes = scan(request, linked.Token);
+                        }
+                        catch (OperationCanceledException) when (linked.IsCancellationRequested)
+                        {
+                            // Статус Cancelled выставляется ниже и для остановки хоста,
+                            // и для отмены этого задания.
+                        }
+                        catch (Exception exception)
+                        {
+                            error = exception is IOException or UnauthorizedAccessException
+                                ? "Не удалось прочитать каталог. Проверьте путь и права доступа."
+                                : "Не удалось выполнить сравнение снимков.";
+                        }
+
+                        lock (_gate)
+                        {
+                            ScanJob job = _jobs[id];
+                            bool cancelled = _stopping
+                                || job.Status == ScanJobStatus.CancellationRequested
+                                || linked.IsCancellationRequested;
+                            _jobs[id] = job with
+                            {
+                                Status = cancelled ? ScanJobStatus.Cancelled : error is null ? ScanJobStatus.Completed : ScanJobStatus.Failed,
+                                FinishedAt = DateTimeOffset.UtcNow,
+                                Changes = cancelled ? null : changes,
+                                Error = cancelled ? null : error
+                            };
+                        }
+                    }
+                    finally
+                    {
+                        lock (_gate)
+                        {
+                            _scanCancellations.Remove(id);
+                        }
+
+                        scanCancellation.Dispose();
                     }
                 }
             }
@@ -163,6 +192,49 @@ namespace HwSync.Core.Services
             finally
             {
                 Stop();
+            }
+        }
+
+        /// <summary>
+        /// Переводит ожидающее задание в выполнение и выдаёт источник его отмены.
+        /// </summary>
+        private CancellationTokenSource? TryBeginScan(Guid id, out bool stopping)
+        {
+            lock (_gate)
+            {
+                stopping = _stopping;
+                if (_stopping || !_jobs.TryGetValue(id, out ScanJob? job) || job.Status != ScanJobStatus.Queued)
+                {
+                    return null;
+                }
+
+                CancellationTokenSource scanCancellation = new();
+                _scanCancellations.Add(id, scanCancellation);
+                _jobs[id] = job with
+                {
+                    Status = ScanJobStatus.Running
+                };
+                return scanCancellation;
+            }
+        }
+
+        /// <summary>
+        /// Прерывает чтение задания; повтор после освобождения источника безопасен.
+        /// </summary>
+        private static void CancelScan(CancellationTokenSource? scan)
+        {
+            if (scan is null)
+            {
+                return;
+            }
+
+            try
+            {
+                scan.Cancel();
+            }
+            catch (ObjectDisposedException)
+            {
+                // Исполнитель уже завершил задание и освободил источник.
             }
         }
 

@@ -38,6 +38,7 @@ namespace HwSync.Server.AppServices
             services.AddSingleton<IAdministrationStore, SqliteAdministrationStore>();
             services.AddSingleton(provider => new ServerStorageInfo(provider.GetRequiredService<SqliteDatabase>().FilePath));
             services.AddSingleton<IFolderSyncStateStore, SqliteFolderSyncStateStore>();
+            services.AddSingleton<IAllowedServerRoots, ConfiguredServerRoots>();
 
             // Миграции должны завершиться до запуска очереди и HTTP-сервера.
             services.AddHostedService<SqliteStartupService>();

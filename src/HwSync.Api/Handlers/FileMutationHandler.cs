@@ -44,9 +44,8 @@ namespace HwSync.Api.Handlers
                 FileMutationOperation.DeleteCompared or FileMutationOperation.VerifyUnchanged => FileChangeType.Modified,
                 _ => FileChangeType.Deleted
             };
-            FileChange? change = job.Changes?.FirstOrDefault(item =>
-                (item.ChangeType == kind || kind == FileChangeType.Modified && item.ChangeType == FileChangeType.Unchanged)
-                && string.Equals((item.Current ?? item.Previous)?.RelativePath, relativePath, StringComparison.OrdinalIgnoreCase));
+            FileChange? change = job.Changes?.FirstOrDefault(item => (item.ChangeType == kind || kind == FileChangeType.Modified && item.ChangeType == FileChangeType.Unchanged)
+                && RelativeFilePath.Same((item.Current ?? item.Previous)?.RelativePath, relativePath));
 
             if (change is null)
             {

@@ -25,6 +25,7 @@ namespace HwSync.Windows.Server.Host.Tests
             await File.WriteAllTextAsync(Path.Combine(directory, "sample.txt"), "content");
             WebApplicationBuilder builder = HostBootstrap.CreateBuilder(true, ["Urls=http://127.0.0.1:0"]);
             builder.Configuration["Storage:DatabasePath"] = Path.Combine(TestContext.CurrentContext.WorkDirectory, "artifacts", "test-history", Guid.NewGuid().ToString("N"), "state.db");
+            builder.Configuration["Storage:AllowedRoots:0"] = directory;
             builder.Logging.ClearProviders();
             await using WebApplication app = builder.Build();
             app.MapHwSyncApi();
@@ -67,6 +68,18 @@ namespace HwSync.Windows.Server.Host.Tests
                         clientSnapshot = Array.Empty<FileSnapshotDto>()
                     }, timeout.Token);
                 Assert.That(invalid.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
+                string outside = Path.Combine(Path.GetTempPath(), "HwSync-Outside-" + Guid.NewGuid());
+                Directory.CreateDirectory(outside);
+                try
+                {
+                    using HttpResponseMessage forbidden = await client.PostAsJsonAsync("/api/v1/scan-jobs",
+                        new CompareFoldersRequest(outside, []), timeout.Token);
+                    Assert.That(forbidden.StatusCode, Is.EqualTo(HttpStatusCode.BadRequest));
+                }
+                finally
+                {
+                    Directory.Delete(outside);
+                }
                 using HttpResponseMessage missing = await client.GetAsync($"/api/v1/scan-jobs/{Guid.NewGuid()}", timeout.Token);
                 Assert.That(missing.StatusCode, Is.EqualTo(HttpStatusCode.NotFound));
                 // Проверяем клиентскую библиотеку против реального HTTP API.

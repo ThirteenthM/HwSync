@@ -97,6 +97,21 @@ namespace HwSync.Persistence.Sqlite.Tests
         }
 
         /// <summary>
+        /// Другой регистр и разделитель обновляют тот же файл и не создают удаление.
+        /// </summary>
+        [Test]
+        public void History_PathKeyIgnoresCaseAndSeparator()
+        {
+            new SqliteMigrator(_database).Apply();
+            SqliteFolderHistory history = new(_database);
+            string root = Path.Combine(_directory, "files");
+            history.RecordSnapshot(root, [new(@"Dir\A.txt", 1, DateTime.UnixEpoch)]);
+            history.RecordSnapshot(root, [new("dir/a.txt", 2, DateTime.UnixEpoch.AddMinutes(1))]);
+
+            Assert.That(history.GetDeletedFiles(root), Is.Empty);
+        }
+
+        /// <summary>
         /// Исчезновение известного файла создаёт одно событие, восстановление снимает его активность.
         /// </summary>
         [Test]
@@ -199,12 +214,12 @@ namespace HwSync.Persistence.Sqlite.Tests
             HistorySnapshotProvider provider = new(new DirectorySnapshotProvider(), history);
             IReadOnlyCollection<FileSnapshot> before = provider.GetSnapshot(root);
             using CancellationTokenSource cancellation = new();
-            Func<Stream, CancellationToken, Task> receive = async (output, token) =>
+            async Task receive(Stream output, CancellationToken token)
             {
                 await output.WriteAsync(new byte[] { 4 }, token);
                 await output.FlushAsync(token);
                 Assert.That(Directory.GetFiles(root, ".hwsync-*.tmp"), Has.Length.EqualTo(1));
-                Assert.That(provider.GetSnapshot(root), Is.EquivalentTo(before));
+                Assert.That(provider.GetSnapshot(root, token), Is.EquivalentTo(before));
                 Assert.That(history.GetDeletedFiles(root), Is.Empty);
                 if (cancel)
                 {
@@ -213,7 +228,7 @@ namespace HwSync.Persistence.Sqlite.Tests
                 }
 
                 await output.WriteAsync(new byte[] { 5 }, token);
-            };
+            }
             FileSnapshot incoming = new("file.txt", 2, DateTime.UnixEpoch);
             Task operation;
             if (replace)

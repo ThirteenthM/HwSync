@@ -155,16 +155,16 @@ namespace HwSync.Windows.AppServices.Client.ViewModels
                     IReadOnlyList<DeletedFileDto> remote = _jobClient is IDeletionHistoryClient historyClient
                         ? await historyClient.GetDeletedFilesAsync(job.Id, _lifetime.Token) : [];
                     IReadOnlyList<DeletedFile> local = _history?.GetDeletedFiles(_comparedClientRoot) ?? [];
-                    Dictionary<string, FileDeletionEvidence> serverDeleted = remote.GroupBy(file => file.RelativePath, StringComparer.OrdinalIgnoreCase)
+                    Dictionary<string, FileDeletionEvidence> serverDeleted = remote.GroupBy(file => RelativeFilePath.Key(file.RelativePath), StringComparer.OrdinalIgnoreCase)
                         .Select(group => group.OrderByDescending(file => file.ChangeNumber).First()).Where(file => file.Deleted)
-                        .ToDictionary(file => file.RelativePath, file => new FileDeletionEvidence(file.RelativePath,
+                        .ToDictionary(file => RelativeFilePath.Key(file.RelativePath), file => new FileDeletionEvidence(file.RelativePath,
                             file.PreviousFile is null ? null : ToSnapshot(file.PreviousFile)), StringComparer.OrdinalIgnoreCase);
-                    Dictionary<string, FileDeletionEvidence> clientDeleted = local.GroupBy(file => file.RelativePath, StringComparer.OrdinalIgnoreCase)
+                    Dictionary<string, FileDeletionEvidence> clientDeleted = local.GroupBy(file => RelativeFilePath.Key(file.RelativePath), StringComparer.OrdinalIgnoreCase)
                         .Select(group => group.OrderByDescending(file => file.ChangeNumber).First()).Where(file => file.Deleted)
-                        .ToDictionary(file => file.RelativePath, file => new FileDeletionEvidence(file.RelativePath, file.PreviousFile), StringComparer.OrdinalIgnoreCase);
+                        .ToDictionary(file => RelativeFilePath.Key(file.RelativePath), file => new FileDeletionEvidence(file.RelativePath, file.PreviousFile), StringComparer.OrdinalIgnoreCase);
                     rows = job.Changes?.Select(change =>
                     {
-                        string path = change.Current?.RelativePath ?? change.Previous?.RelativePath ?? "";
+                        string path = RelativeFilePath.Key(change.Current?.RelativePath ?? change.Previous?.RelativePath ?? "");
                         clientDeleted.TryGetValue(path, out FileDeletionEvidence? clientDeletion);
                         serverDeleted.TryGetValue(path, out FileDeletionEvidence? serverDeletion);
                         bool deletedOnClient = change.Previous is null && change.Current is not null && clientDeletion is not null;

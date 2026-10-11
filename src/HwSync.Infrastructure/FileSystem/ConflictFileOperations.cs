@@ -30,9 +30,10 @@ namespace HwSync.Infrastructure.FileSystem
             }
 
             string target = SafeFilePath.Resolve(root, expected.RelativePath);
-            string temporary = TransferTemporaryFile.CreatePath(Path.GetDirectoryName(target)!);
+            string? temporary = null;
             try
             {
+                temporary = Path.Combine(Path.GetDirectoryName(target)!, ".hwsync-" + Guid.NewGuid().ToString("N") + ".tmp");
                 await using (FileStream output = new(temporary, FileMode.CreateNew, FileAccess.Write, FileShare.None, 81920, true))
                 {
                     await receive(output, token);
@@ -50,17 +51,23 @@ namespace HwSync.Infrastructure.FileSystem
                 {
                     token.ThrowIfCancellationRequested();
                 }
+
                 File.Move(temporary, target, true);
+                temporary = null;
             }
             finally
             {
-                try
+                if (temporary is not null && File.Exists(temporary))
                 {
-                    File.Delete(temporary);
-                }
-                catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
-                {
-                    System.Diagnostics.Trace.TraceWarning("Не удалось удалить временный файл {0}: {1}", temporary, exception.Message);
+                    try
+                    {
+                        File.Delete(temporary);
+                    }
+                    catch (Exception exception) when (exception is IOException or UnauthorizedAccessException)
+                    {
+                        System.Diagnostics.Trace.TraceWarning(
+                            "Не удалось удалить временный файл {0}: {1}", temporary, exception.Message);
+                    }
                 }
             }
         }

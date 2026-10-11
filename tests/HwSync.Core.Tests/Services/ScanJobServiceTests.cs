@@ -9,6 +9,22 @@ namespace HwSync.Core.Tests.Services
     public class ScanJobServiceTests
     {
         /// <summary>
+        /// Повтор пути с другим регистром не ставится в очередь.
+        /// </summary>
+        [Test]
+        public void Start_DuplicatePathIgnoringCase_IsRejected()
+        {
+            ScanJobService jobs = new();
+            ChangeScanRequest request = new(Path.GetTempPath(),
+            [
+                new("A.txt", 1, DateTime.UnixEpoch),
+                new(@"a.txt", 1, DateTime.UnixEpoch)
+            ]);
+
+            Assert.Throws<ArgumentException>(() => jobs.Start(request));
+        }
+
+        /// <summary>
         /// Остановка хоста прерывает текущее сканирование через переданный токен.
         /// </summary>
         [Test]
@@ -128,6 +144,46 @@ namespace HwSync.Core.Tests.Services
                 await worker;
             }
             Assert.Throws<InvalidOperationException>(() => jobs.Start(request));
+        }
+
+        /// <summary>
+        /// Отмена выполняющегося задания прерывает переданный ему токен.
+        /// </summary>
+        [Test]
+        public async Task Cancel_RunningJob_CancelsScanToken()
+        {
+            ScanJobService jobs = new();
+            ScanJob running = jobs.Start(new(Path.GetTempPath(), []));
+            TaskCompletionSource entered = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            using CancellationTokenSource stop = new(TimeSpan.FromSeconds(10));
+            Task worker = Task.Run(() => jobs.RunAsync((scanRequest, cancellationToken) =>
+            {
+                entered.TrySetResult();
+                cancellationToken.WaitHandle.WaitOne();
+                cancellationToken.ThrowIfCancellationRequested();
+                return [];
+            }, stop.Token));
+            try
+            {
+                await entered.Task.WaitAsync(stop.Token);
+                Assert.That(jobs.Cancel(running.Id)!.Status, Is.EqualTo(ScanJobStatus.CancellationRequested));
+                while (jobs.Get(running.Id)!.FinishedAt is null)
+                {
+                    await Task.Delay(10, stop.Token);
+                }
+
+                Assert.Multiple(() =>
+                {
+                    Assert.That(jobs.Get(running.Id)!.Status, Is.EqualTo(ScanJobStatus.Cancelled));
+                    Assert.That(jobs.Get(running.Id)!.Changes, Is.Null);
+                    Assert.That(jobs.Get(running.Id)!.Error, Is.Null);
+                });
+            }
+            finally
+            {
+                await stop.CancelAsync();
+                await worker;
+            }
         }
 
         /// <summary>

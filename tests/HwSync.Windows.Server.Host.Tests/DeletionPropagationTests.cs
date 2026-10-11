@@ -38,6 +38,7 @@ namespace HwSync.Windows.Server.Host.Tests
 
             WebApplicationBuilder builder = HostBootstrap.CreateBuilder(true, ["Urls=http://127.0.0.1:0"]);
             builder.Configuration["Storage:DatabasePath"] = Path.Combine(root, "metadata", "server.db");
+            builder.Configuration["Storage:AllowedRoots:0"] = server;
             builder.Logging.ClearProviders();
             await using WebApplication app = builder.Build();
             app.MapHwSyncApi();

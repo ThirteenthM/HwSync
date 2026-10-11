@@ -44,8 +44,8 @@ namespace HwSync.Api.Handlers
             }
 
             FileChange? change = job.Changes?.SingleOrDefault(item => item.ChangeType == FileChangeType.Modified
-                && string.Equals(item.Current?.RelativePath, relativePath, StringComparison.OrdinalIgnoreCase)
-                && string.Equals(item.Previous?.RelativePath, relativePath, StringComparison.OrdinalIgnoreCase));
+                && RelativeFilePath.Same(item.Current?.RelativePath, relativePath)
+                && RelativeFilePath.Same(item.Previous?.RelativePath, relativePath));
             if (change?.Previous is not FileSnapshot client || change.Current is not FileSnapshot server)
             {
                 return new ConflictObjectResult("Файл не является конфликтом выбранного сравнения.");

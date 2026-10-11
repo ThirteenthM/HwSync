@@ -1,3 +1,4 @@
+using HwSync.Abstractions.FileSystem;
 using HwSync.Abstractions.Models;
 using HwSync.Abstractions.Services;
 using HwSync.Api.Contracts;
@@ -11,13 +12,15 @@ namespace HwSync.Api.Handlers
     public sealed class ScanJobHandler
     {
         private readonly IScanJobService _jobs;
+        private readonly IAllowedServerRoots _roots;
 
         /// <summary>
-        /// Принимает службу серверных заданий.
+        /// Принимает службу заданий и список разрешённых каталогов.
         /// </summary>
-        public ScanJobHandler(IScanJobService jobs)
+        public ScanJobHandler(IScanJobService jobs, IAllowedServerRoots roots)
         {
             _jobs = jobs;
+            _roots = roots;
         }
 
         /// <summary>
@@ -31,6 +34,8 @@ namespace HwSync.Api.Handlers
                 {
                     throw new ArgumentException("ClientSnapshot должен быть массивом снимков файлов.");
                 }
+
+                _roots.EnsureAllowed(request.ServerRootPath);
                 ChangeScanRequest scanRequest = new(request.ServerRootPath,
                     request.ClientSnapshot.Select(file => new FileSnapshot(file.RelativePath, file.Size, file.LastWriteTimeUtc)).ToArray());
                 ScanJob job = _jobs.Start(scanRequest);

@@ -40,6 +40,7 @@ namespace HwSync.Windows.Server.Host.Tests
             await File.WriteAllTextAsync(Path.Combine(server, "server-only.txt"), "server");
             WebApplicationBuilder builder = HostBootstrap.CreateBuilder(true, ["Urls=http://127.0.0.1:0"]);
             builder.Configuration["Storage:DatabasePath"] = Path.Combine(TestContext.CurrentContext.WorkDirectory, "artifacts", "test-history", Guid.NewGuid().ToString("N"), "state.db");
+            builder.Configuration["Storage:AllowedRoots:0"] = server;
             builder.Logging.ClearProviders();
             await using WebApplication app = builder.Build();
             app.MapHwSyncApi();

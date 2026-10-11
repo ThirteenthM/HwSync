@@ -1,4 +1,5 @@
 using System.IO;
+using HwSync.Abstractions.FileSystem;
 using HwSync.Abstractions.Models;
 using HwSync.Api.Client;
 using HwSync.Api.Contracts;
@@ -95,7 +96,7 @@ namespace HwSync.Windows.AppServices.Client.ViewModels
         {
             ScanJobResponse comparison = _completedComparison ?? throw new InvalidOperationException("Повторите сравнение.");
             FileSnapshotDto? snapshot = comparison.Changes?.Select(change => candidate.OnServer ? change.Current : change.Previous)
-                .SingleOrDefault(file => string.Equals(file?.RelativePath, candidate.Path, StringComparison.OrdinalIgnoreCase));
+                .SingleOrDefault(file => RelativeFilePath.Same(file?.RelativePath, candidate.Path));
             if (snapshot is null || snapshot.Size != candidate.Size || snapshot.LastWriteTimeUtc != candidate.ModifiedUtc)
             {
                 throw new InvalidOperationException("Файл не относится к текущему сравнению.");
