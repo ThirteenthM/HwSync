@@ -9,7 +9,7 @@ namespace HwSync.Server.AppServices.Tests
     public sealed class ConfiguredServerRootsTests
     {
         /// <summary>
-        /// Разрешает сам корень и каталог внутри него, отклоняет соседний каталог.
+        /// Разрешает корень и вложенный каталог, отклоняет соседние каталоги, включая общий префикс имени.
         /// </summary>
         [Test]
         public void EnsureAllowed_AcceptsRootAndChildOnly()
@@ -17,6 +17,7 @@ namespace HwSync.Server.AppServices.Tests
             string root = Path.Combine(Path.GetTempPath(), "HwSync-Roots-" + Guid.NewGuid().ToString("N"));
             string child = Path.Combine(root, "child");
             string sibling = Path.Combine(Path.GetTempPath(), "HwSync-Sibling-" + Guid.NewGuid().ToString("N"));
+            string siblingWithSamePrefix = root + "-other";
             IConfiguration configuration = new ConfigurationBuilder()
                 .AddInMemoryCollection(new Dictionary<string, string?>
                 {
@@ -29,6 +30,8 @@ namespace HwSync.Server.AppServices.Tests
             Assert.DoesNotThrow(() => roots.EnsureAllowed(child));
             ArgumentException error = Assert.Throws<ArgumentException>(() => roots.EnsureAllowed(sibling))!;
             Assert.That(error.Message, Does.Contain("не входит"));
+            ArgumentException prefixError = Assert.Throws<ArgumentException>(() => roots.EnsureAllowed(siblingWithSamePrefix))!;
+            Assert.That(prefixError.Message, Does.Contain("не входит"));
         }
 
         /// <summary>

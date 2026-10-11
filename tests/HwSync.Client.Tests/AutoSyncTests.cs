@@ -15,6 +15,30 @@ namespace HwSync.Client.Tests
     /// </summary>
     public sealed class AutoSyncTests
     {
+        private readonly List<string> _directories = [];
+
+        /// <summary>
+        /// Удаляет созданные тестом папки после освобождения моделей.
+        /// </summary>
+        [TearDown]
+        public void TearDown()
+        {
+            try
+            {
+                foreach (string directory in _directories)
+                {
+                    if (Directory.Exists(directory))
+                    {
+                        Directory.Delete(directory, recursive: true);
+                    }
+                }
+            }
+            finally
+            {
+                _directories.Clear();
+            }
+        }
+
         /// <summary>
         /// Подтверждение выбирает сторону и переводит исключённые файлы в пропуск.
         /// </summary>
@@ -758,9 +782,10 @@ namespace HwSync.Client.Tests
         /// <summary>
         /// Создаёт независимую папку с локальным файлом и конфликтом.
         /// </summary>
-        private static string CreateDirectory()
+        private string CreateDirectory()
         {
-            string root = Path.Combine(TestContext.CurrentContext.WorkDirectory, "auto-sync", Guid.NewGuid().ToString("N"));
+            string root = Path.Combine(Path.GetTempPath(), "HwSync-AutoSync-" + Guid.NewGuid().ToString("N"));
+            _directories.Add(root);
             Directory.CreateDirectory(root);
             File.WriteAllText(Path.Combine(root, "client.txt"), "client");
             File.WriteAllText(Path.Combine(root, "conflict.txt"), "local conflict");

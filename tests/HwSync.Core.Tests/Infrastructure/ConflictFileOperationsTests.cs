@@ -59,7 +59,16 @@ namespace HwSync.Core.Tests.Infrastructure
                 }
                 else
                 {
-                    Assert.That(async () => await replace, Throws.InstanceOf<Exception>());
+                    if (mode == "cancel")
+                    {
+                        OperationCanceledException? exception = Assert.CatchAsync<OperationCanceledException>(async () => await replace);
+                        Assert.That(exception!.CancellationToken, Is.EqualTo(cancellation.Token));
+                    }
+                    else
+                    {
+                        Assert.ThrowsAsync<IOException>(async () => await replace);
+                    }
+
                     Assert.That(File.ReadAllText(path), Is.EqualTo(mode.StartsWith("changed") ? "newer original" : "original"));
                 }
 
